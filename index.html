@@ -428,7 +428,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
         <div><b>3. 농장 탑 · 런닝머신</b>농장은 한 층에 밭 10칸, 10층까지 올려요(최대 100칸). 농장 뒤쪽 ▲▼ 발판에 가만히 서면 층을 오르내려요. 농장 앞 표지판의 <b>초록 버튼을 클릭</b>하면 농장(층)과 런닝머신(일반→철→강철→금→다이아몬드→에메랄드→기계→천사→글리치→제우스)을 업그레이드해요. 런닝머신에 가만히 서 있으면 0.5초마다 스피드가 올라요!</div>
         <div><b>4. 직접 심기</b>가져온 씨앗은 가방에 들어가요. 밭에 서거나 농장 메뉴(B)에서 골라 심어요. 내 농장 안에 서 있으면 자란 식물의 돈이 모여요. 큰 씨앗은 오래 걸리지만 돈을 훨씬 많이 벌어요!</div>
       </div>
-      <p style="font-size:13.5px;text-align:center;margin:4px 0">11개 구역(마지막은 천사와 영혼의 해골) · 구역마다 7등급 씨앗 · 모두 다른 신비한 식물 77종. <b>시크릿</b> 이상이 나오면 화면 위에 알림이 떠요! 공유 메뉴에서 이메일로 초대한 친구가 로그인해서 들어오면 같은 맵에서 놀고, 친구 농장은 빈 농장 자리(22개)에 생겨요. 씨앗 든 사람을 방망이로 때리면 씨앗이 떨어져요. 떨어진 씨앗은 그냥 밟아서는 못 줍고, 옆에서 E(씨앗 버튼)를 눌러야 주워요. 들고 있는 씨앗은 G(놓기 버튼)로, 가방 속 씨앗은 농장 메뉴의 '놓기'로 바닥에 놓아 친구에게 줄 수 있어요. 구역 방망이는 그 구역 도감 7종(시크릿·디바인까지)을 다 채워야 받아요.</p>
+      <p style="font-size:13.5px;text-align:center;margin:4px 0">11개 구역(마지막은 천사와 영혼의 해골) · 구역마다 7등급 씨앗 · 모두 다른 신비한 식물 77종. <b>시크릿</b> 이상이 나오면 화면 위에 알림이 떠요! 공유 메뉴에서 이메일로 초대한 친구가 로그인해서 들어오면 같은 맵에서 놀고, 친구 농장은 빈 농장 자리(22개)에 생겨요. 씨앗 든 사람을 방망이로 때리면 씨앗이 떨어져요. 떨어진 씨앗은 그냥 밟아서는 못 줍고, 옆에서 E(씨앗 버튼)를 <b>꾹 눌러야</b> 주워요 — 놓은 사람도, 친구도 주울 수 있어요. 들고 있는 씨앗은 G(놓기 버튼)로, 가방 속 씨앗은 농장 메뉴의 '놓기'로 바닥에 놓아 친구에게 줄 수 있어요. 구역 방망이는 그 구역 도감 7종(시크릿·디바인까지)을 다 채워야 받아요.</p>
       <div class="keys">PC: WASD 이동 · E 꾹 훔치기 · 클릭/F/Space 방망이 한 번 휘두르기 · G 씨앗 놓기 · H/홈 버튼 집 앞으로(씨앗 안 들었을 때) · Shift 꾹/스위치 슬로우 모드(천천히 걷기) · E 심기 · B 농장 메뉴 · I 인덱스 · Esc 메뉴 · 드래그 카메라 · 휠 줌 · 표지판 버튼 클릭 업그레이드<br>모바일: 왼쪽 엄지 이동 · 오른쪽 드래그 카메라 · 씨앗 버튼 꾹 훔치기 · 방망이 버튼/탭 · 씨앗 놓기 버튼 · 농장 버튼 · 표지판 버튼 터치 업그레이드<br>4분마다 구역마다 새 씨앗 10개가 랜덤한 곳에 나타나요 · 큰 씨앗은 무거워서 들고 뛰면 느려져요 · 진행은 자동으로 저장돼요</div>
     </details>
     <div class="codeBox"><div class="fbT">저장 백업</div>
@@ -596,8 +596,9 @@ const spIndex = (k, t) => (k - 1) * NT + (t - 1);
 function rollTier(){ let sum = 0; for (let t = 1; t <= NT; t++) sum += TIERS[t].p; let r = Math.random() * sum; for (let t = 1; t <= NT; t++){ r -= TIERS[t].p; if (r < 0) return t; } return 1; }
 function rollSpecies(k){ return spIndex(k, rollTier()); }
 
-/* ---- seed size: every seed has its own size. Bigger seeds are rarer, grow bigger plants that earn much more,
-   but take an enormously longer time to grow (time grows with the 4th power of the size). ---- */
+/* ---- seed size: every seed has its own size. Bigger seeds grow bigger plants that earn much more (size squared)
+   and take somewhat longer (size^1.5, never more than 8x). The grade sets the odds: 일반 seeds are mostly small,
+   디바인 seeds are always huge. ---- */
 const SIZES = [
   { n:'작은',    a:0.6,  b:0.9 },
   { n:'보통',    a:0.9,  b:1.25 },
@@ -606,10 +607,18 @@ const SIZES = [
   { n:'거대한',  a:2.3,  b:3.2 },
   { n:'초거대',  a:3.2,  b:4.5 },
 ];
-// the size is pure luck: the same odds everywhere, in every zone and section
-const SIZE_W = [24, 45, 21, 7.3, 2.1, 0.6];
-function rollSize(){
-  const w = SIZE_W; let sum = 0; for (const x of w) sum += x;
+// size odds by grade (작은 보통 큰 아주큰 거대한 초거대): the better the grade, the bigger the seed
+const SIZE_W = [null,
+  [40, 45, 12, 3, 0, 0],      // 일반
+  [20, 45, 25, 8, 2, 0],      // 희귀
+  [8, 35, 35, 15, 6, 1],      // 에픽
+  [2, 20, 38, 25, 11, 4],     // 전설
+  [0, 8, 30, 32, 20, 10],     // 신화
+  [0, 0, 15, 35, 30, 20],     // 시크릿
+  [0, 0, 0, 25, 40, 35],      // 디바인
+];
+function rollSize(t){
+  const w = SIZE_W[clamp(t | 0, 1, NT)]; let sum = 0; for (const x of w) sum += x;
   let r = Math.random() * sum, c = 0; for (; c < w.length - 1; c++){ r -= w[c]; if (r < 0) break; }
   const S = SIZES[c]; return Math.round((S.a + (S.b - S.a) * Math.pow(Math.random(), 1.6)) * 100) / 100;
 }
@@ -632,7 +641,7 @@ const fixSz = v => (typeof v === 'number' && isFinite(v)) ? Math.round(clamp(v, 
 const sizeCls = sz => { for (let c = SIZES.length - 1; c > 0; c--) if (sz >= SIZES[c].a) return c; return 0; };
 const sizeName = sz => SIZES[sizeCls(sz)].n;
 const sizeInc = sz => sz * sz;               // twice as big -> 4x the money
-const sizeGrow = sz => Math.pow(sz, 4);      // twice as big -> 16x the waiting
+const sizeGrow = sz => Math.min(8, Math.pow(sz, 1.5));   // twice as big -> 2.8x the waiting, capped at 8x
 const szText = sz => '×' + (Math.round(sz * 10) / 10).toFixed(1);
 const plantVis = sz => clamp(Math.pow(sz, 0.75), 0.72, 2.5);   // how much bigger the grown plant looks
 // seeds travel as one number: species * 1000 + size * 100 (online and in the save)
@@ -3786,14 +3795,13 @@ function dropCarry(a){
   spawnEgg(c.sp, c.sz, c.spot, a.x, a.z, a);
   Snd.play('drop', a.isPlayer ? 1 : 0.6);
 }
-// putting a seed down on purpose (G key / 놓기 button): it stays where it lands until someone picks it up.
-// The one who dropped it has to step away before they can pick it up again, so a friend gets the chance.
+// putting a seed down on purpose (G key / 놓기 button): it stays where it lands until someone -- me included -- holds E next to it.
 function dropSeedNow(){
   const a = player, c = a.carry; if (!c || a.respawnT > 0 || a.stun > 0) return false;
   a.carry = null; refreshCarry(a);
   if (NET.role === 'client'){ netRequest('dr', seedCode(c.sp, c.sz), c.spot, r2(a.x), r2(a.z), 1); }
   else { const e = spawnEgg(c.sp, c.sz, c.spot, a.x, a.z, a); markDropped(e, a); }
-  Snd.play('drop'); toast('씨앗을 놓았어요. 친구가 주워 갈 수 있어요 (내가 다시 주우려면 조금 떨어졌다 와요)', '');
+  Snd.play('drop'); toast(isTouch ? '씨앗을 놓았어요. 씨앗 버튼을 꾹 누르면 나도, 친구도 다시 주울 수 있어요' : '씨앗을 놓았어요. E를 꾹 누르면 나도, 친구도 다시 주울 수 있어요', '');
   return true;
 }
 // a seed out of the bag goes on the ground in front of me (in the safe zone a friend walks over it and it goes into their bag)
@@ -3809,20 +3817,25 @@ function markDropped(e, a){
   e.keep = true; e.pick = 0.5; e.dropT = clock; e.dropFree = false;
   e.vx = Math.sin(a.face) * 4.5; e.vz = Math.cos(a.face) * 4.5; e.vy = 5;   // a short toss forward
 }
-// may this actor pick up this seed? (the dropper must first step back from it)
-const canPick = (e, a) => !(e.dropper === a && e.dropT !== undefined && (clock - e.dropT < 1 || !e.dropFree));
-/* a dropped seed is not picked up by walking over it: stand next to it and press E (or the seed button / tap the seed),
-   or hold E a moment -- the same as stealing one */
+// may this actor pick up this seed? anyone may -- the one who put it down just waits a moment (so the drop key doesn't scoop it straight back up)
+const canPick = (e, a) => !(e.dropper === a && e.dropT !== undefined && clock - e.dropT < 0.8);
+/* a dropped seed is not picked up by walking over it, and not by a tap either: stand next to it and HOLD E
+   (or hold the seed button / keep a finger on the seed) for as long as stealing that grade takes -- the same
+   gesture, the same bar; the one who dropped it and everyone else alike */
 let eggTarget = -1, eggHoldT = 0, eggWant = false;
-const EGG_R = 1.9, EGG_HOLD = 0.3;
+const EGG_R = 1.9;
+const stealNeed = t => 0.5 + 0.09 * t;                 // seconds of holding, by grade (also the steal from a spot)
+const eggNeed = e => stealNeed(SPECIES[e.sp].t);
 const eggLanded = e => (e.ty !== undefined ? e.ty : e.y) <= e.rest + 0.45 && e.pick <= 0;
 function eggNear(a){ let best = -1, bd = EGG_R * EGG_R; for (let i = 0; i < eggs.length; i++){ const e = eggs[i]; if (!eggLanded(e) || !canPick(e, a)) continue; const d = dist2(a.x, a.z, e.x, e.z); if (d < bd){ bd = d; best = i; } } return best; }
-function wantEgg(){ eggWant = true; }
+function wantEgg(){ /* a press alone no longer picks the seed up: the hold does (eggPickGate) */ }
 // once per frame: is the player asking to pick up the seed next to them right now?
 function eggPickGate(dt){
-  eggTarget = player && !player.carry && player.respawnT <= 0 && player.stun <= 0 ? eggNear(player) : -1;
-  if (eggTarget >= 0 && holding()) eggHoldT += dt; else eggHoldT = 0;
-  const ok = eggTarget >= 0 && (eggWant || eggHoldT >= EGG_HOLD); eggWant = false;
+  const was = eggTarget; eggTarget = player && !player.carry && player.respawnT <= 0 && player.stun <= 0 ? eggNear(player) : -1;
+  if (eggTarget < 0 || eggTarget !== was) eggHoldT = 0;
+  if (eggTarget >= 0 && holding()){ const b = eggHoldT; eggHoldT += dt; if (Math.floor(b * 6) !== Math.floor(eggHoldT * 6)) Snd.play('tick'); }
+  else eggHoldT = Math.max(0, eggHoldT - dt * 2);     // let go and the bar runs back down, like a steal
+  const ok = eggTarget >= 0 && eggHoldT >= eggNeed(eggs[eggTarget]); eggWant = false;
   if (ok) eggHoldT = 0;
   return ok;
 }
@@ -3947,7 +3960,7 @@ function updateSteal(a, dt){
   const i = nearestSpot(a, 2.4);
   if (i < 0){ a.steal = 0; a.stealSpot = -1; return null; }
   if (a.stealSpot !== i){ a.steal = 0; a.stealSpot = i; }
-  const s = world.spots[i], t = SPECIES[s.sp].t, need = 0.5 + 0.09 * t;
+  const s = world.spots[i], t = SPECIES[s.sp].t, need = stealNeed(t);
   if (a.isPlayer && NET.role === 'client' && a.stealWait > 0){ a.stealWait -= dt; return { i, p:1 }; }
   // the player only steals while holding E / the seed button -- walking past a seed takes nothing
   if (a.isPlayer && !holding()){ a.steal = Math.max(0, a.steal - dt * 2); return { i, p:a.steal / need, idle:true }; }
@@ -4036,14 +4049,20 @@ function nearestCarrier(g){
 const myEgg = g => { let best = null, bd = Infinity; for (const e of eggs){ if (SPECIES[e.sp].zone !== g.k || zoneAt(e.z) !== g.k) continue; /* a seed lost in another zone is left lying there */ const d = dist2(e.x, e.z, g.x, g.z); if (d < bd){ bd = d; best = e; } } return best; };
 function gAlert(g, a){
   if (!isTargetFor(g, a)) return;
-  if (g.state === 'chase' || g.state === 'wake' || g.state === 'cool'){ if (!isTargetFor(g, g.target)) g.target = a; return; }
+  if (g.state === 'chase' || g.state === 'wake' || g.state === 'cool'){ if (!isTargetFor(g, g.target)) g.target = a; return; }   // busy with one thief: the next one gets its turn when this chase ends (gRetarget)
   // lying down it needs a moment to get up; already on its feet it reacts at once
   g.state = 'wake'; g.st0 = g.st = WAKE_T * g.pose + ZONES[g.k].react * (1 - g.pose); g.target = a; g.cspd = 0; gSetIcon(g, '!');
   gSay(g, SAYS[g.key]); gSound(g);
 }
 // someone took a seed of zone k: its owner always notices, wherever it is (the further away, the bigger the thief's head start)
 function alarmZone(k, a){ const g = ownerOf(k); if (g) gAlert(g, a); }
-// after a chase -- the thief caught or lost -- the owner always walks home and lies down again.
+// the chase is over (caught or lost): is someone ELSE still running with one of my seeds? then it's their turn
+function gRetarget(g, say){
+  const n = nearestCarrier(g); if (!n) return false;
+  g.target = n; g.state = 'chase'; g.wind = 0; g.st = 0; gSetIcon(g, '!'); if (say) gSay(g, '다음은 너다!', 1.2); gSound(g);
+  return true;
+}
+// after a chase -- the thief caught or lost -- the owner walks home and lies down again (unless another thief is still out there).
 // It only gets up again when someone takes (or picks up) one of its seeds: alarmZone()
 function gNext(g, lost){
   g.target = null; g.boost = 0; g.wind = 0;
@@ -4109,14 +4128,14 @@ function updateGuard(g, dt, time){
       if (g.st <= 0){
         g.pose = 0;
         if (isTargetFor(g, a)){ g.state = 'chase'; if (g.key === 'lion') guardRoar(g); }
-        else gNext(g, true);
+        else if (!gRetarget(g, false)) gNext(g, true);
       }
       break;
     }
     case 'chase': {
       g.pose = 0;
       let a = g.target;
-      if (!isTargetFor(g, a)){ const safe = a && a.carry && inSafe(a.x, a.z); gNext(g, true); gSay(g, safe ? '흥! 안전 구역이라니… 돌아가자' : '흥!', 1.2); break; }
+      if (!isTargetFor(g, a)){ if (gRetarget(g, true)) break; const safe = a && a.carry && inSafe(a.x, a.z); gNext(g, true); gSay(g, safe ? '흥! 안전 구역이라니… 돌아가자' : '흥!', 1.2); break; }
       if (g.wind > 0){ g.wind -= dt; if (g.wind <= 0) abilityFire(g, a); break; }  // winding up an attack
       const dx = a.x - g.x, dz = a.z - g.z, d = Math.hypot(dx, dz);
       tryAbility(g, a, d);
@@ -4129,7 +4148,7 @@ function updateGuard(g, dt, time){
       }
       break;
     }
-    case 'cool': g.pose = 0; g.st -= dt; if (g.st <= 0) gNext(g, false); break;
+    case 'cool': g.pose = 0; g.st -= dt; if (g.st <= 0 && !gRetarget(g, true)) gNext(g, false); break;
     case 'guard':   // (older saves / hosts) -- nothing to guard any more: go home
       gNext(g, false); break;
     case 'return': {
@@ -4424,11 +4443,11 @@ function updateGuardVisual(g, dt, time){
 }
 /* ================= STATE / FARM / ECONOMY ================= */
 // a seed lying in the zones (and in the save / online) is one number: species * 1000 + size * 100
-function freshSpots(){ return world.spots.map(s => seedCode(rollSpecies(s.k), rollSize())); }
+function freshSpots(){ return world.spots.map(s => { const sp = rollSpecies(s.k); return seedCode(sp, rollSize(SPECIES[sp].t)); }); }
 const emptyPlot = () => ({ sp:-1, sz:1, t:0, bank:0 });
 function newState(){
   return {
-    v:8, m8:true, money:0, earned:0, S:16, mill:1, floors:1,
+    v:9, m8:true, money:0, earned:0, S:16, mill:1, floors:1,
     plots:Array.from({ length:NPLOT }, emptyPlot), bag:[], zbats:Array(NZ + 1).fill(false), zbat:0,
     spots:freshSpots(),
     restock:RESTOCK_SEC, found:Array(SPECIES.length).fill(0), best:0, won:false,
@@ -4437,7 +4456,7 @@ function newState(){
 }
 let G = null;
 // v8 = the big reset (new zone speeds and treadmills): earlier saves are not loaded at all
-const SAVE_KEY = 'seedSeori3d_v8';
+const SAVE_KEY = 'seedSeori3d_v9';
 for (const k of ['seedSeori3d_v2', 'seedSeori3d_v3']){ try { localStorage.removeItem(k); } catch (e) {} }
 // the whole game state as one plain object (what goes into the save and up to the cloud)
 function saveData(){ const s = Object.assign({}, G, { carry: player && player.carry ? seedCode(player.carry.sp, player.carry.sz) : -1, ts:Date.now() }); delete s.pings; delete s._pending; return s; }
@@ -4460,7 +4479,7 @@ async function cloudInit(){
     const [db, user] = await Promise.all([C.use('db'), C.use('user')]);
     if (!db || !user) return null;
     const uid = await user.id(); if (!uid) return null;
-    Cloud.db = db; Cloud.uid = uid; Cloud.doc = db.doc('data/users/' + uid + '/save8');
+    Cloud.db = db; Cloud.uid = uid; Cloud.doc = db.doc('data/users/' + uid + '/save9');
     const snap = await Cloud.doc.get();
     Cloud.ok = true; Cloud.loaded = true;   // only now may this browser write: nothing is overwritten before the cloud copy was seen
     return snap.exists ? snap.data() : null;
@@ -4482,7 +4501,7 @@ async function cloudFlush(){
 const num0 = v => (typeof v === 'number' && isFinite(v) && v > 0) ? v : 0;
 function sanitize(s){
   const b = newState();
-  if (!s || typeof s !== 'object' || s.v !== 8) return b;   // everything before the reset starts over
+  if (!s || typeof s !== 'object' || s.v !== 9) return b;   // everything before the reset starts over
   const o = Object.assign(newState(), s);   // b keeps the fresh defaults to fall back on
   o.money = num0(s.money); o.earned = num0(s.earned); o.S = Math.max(16, num0(s.S));
   o.mill = clamp(s.mill | 0, 1, MILL_MAX); o.floors = clamp(s.floors | 0, 1, FLOORS_MAX);
@@ -4855,7 +4874,7 @@ function doRestock(){
   for (const s of free){ if (s.sp >= 0 && Math.abs(s.z - player.z) < 60) burst(s.x, 1.2, s.z, 0xfff4d9, 8, 3, 4); putSeed(s.idx, -1); }
   shuffleSpots(free);
   for (const s of free){
-    const sp = rollSpecies(s.k), sz = rollSize(), t = SPECIES[sp].t;
+    const sp = rollSpecies(s.k), t = SPECIES[sp].t, sz = rollSize(t);
     putSeed(s.idx, sp, sz);
     if (t >= T_SEC) fresh.push([s.idx, t]);
     if (Math.abs(s.z - player.z) < 60) burst(s.x, 1.2, s.z, TIERS[t].col, 10, 3, 5);
@@ -4884,8 +4903,8 @@ function currentHint(){
   if (player.stun > 0) return '기절! 잠깐 움직일 수 없어요';
   if (playerChased()) return '주인이 깼어요! 초록 선(안전 구역)까지 달려요!';
   if (player.carry) return '씨앗을 들고 안전 구역까지 달려요!';
-  if (eggTarget >= 0 && !player.carry) return isTouch ? '씨앗 버튼(또는 씨앗)을 눌러 떨어진 씨앗을 주워요' : 'E 키를 눌러 떨어진 씨앗을 주워요';
-  if (eggs.some(e => dist2(e.x, e.z, player.x, player.z) < 26 * 26)) return '떨어진 씨앗 옆에서 E(씨앗 버튼)를 눌러 주워요! 주우면 주인이 쫓아와요';
+  if (eggTarget >= 0 && !player.carry) return isTouch ? '씨앗 버튼(또는 씨앗)을 꾹 눌러 떨어진 씨앗을 주워요' : 'E 키를 꾹 눌러 떨어진 씨앗을 주워요';
+  if (eggs.some(e => dist2(e.x, e.z, player.x, player.z) < 26 * 26)) return '떨어진 씨앗 옆에서 E(씨앗 버튼)를 꾹 눌러 주워요! 주우면 주인이 쫓아와요';
   const carrier = actors.find(b => b !== player && b.carry && b.respawnT <= 0 && dist2(b.x, b.z, player.x, player.z) < 14 * 14);
   if (carrier) return `씨앗 든 ${carrier.name}님을 방망이로 때리면 씨앗이 떨어져요!`;
   if (stealTarget >= 0 && !player.carry && !holding()) return isTouch ? '씨앗 버튼(또는 씨앗)을 꾹 누르고 있으면 훔쳐요! 주인이 깨어나요' : 'E 키를 꾹 누르고 있으면 훔쳐요! 주인이 깨어나요';
@@ -5973,6 +5992,11 @@ function updatePlayer(dt){
   else stealBar.visible = false;
   if (st){ const s = world.spots[st.i]; stealRing.visible = true; stealRing.position.set(s.x, 0.07, s.z); stealRing.material.color.setHex(TIERS[SPECIES[s.sp].t].col); stealRing.scale.setScalar((0.85 + 0.25 * s.vis) * (1 + Math.sin(clock * 6) * 0.06));
     stealTip.visible = !!st.idle && st.p < 0.05; stealTip.position.set(s.x, s.podY + 1.25 * s.vis + 1.75, s.z); }
+  else if (eggTarget >= 0 && eggs[eggTarget]){   // a dropped seed next to me: the same ring and, while I hold, the same bar
+    const e = eggs[eggTarget], p = Math.min(1, eggHoldT / eggNeed(e));
+    stealRing.visible = true; stealRing.position.set(e.x, 0.07, e.z); stealRing.material.color.setHex(TIERS[SPECIES[e.sp].t].col); stealRing.scale.setScalar(0.95 * (1 + Math.sin(clock * 6) * 0.06)); stealTip.visible = false;
+    if (eggHoldT > 0.01){ stealBar.visible = true; stealBar.position.set(a.x, 3.3, a.z); stealBar.quaternion.copy(camera.quaternion); stealBar.userData.fg.scale.x = Math.max(0.01, p); stealBar.userData.fg.position.x = -0.65 * (1 - p); }
+  }
   else { stealRing.visible = false; stealTip.visible = false; }
   if (a.carry && G.tut < 1) G.tut = 1;
   updateTraining(dt); updateLift(dt); updateTowerView();
@@ -6322,7 +6346,7 @@ function startGame(save){
   applyState(); running = true; showOverlay(null); $('hud').classList.remove('off');
   if (NET.ok) NET.since = Date.now();
   netSend(); netElect(); netUI();
-  if (fresh){ showBanner('씨앗 서리 대작전!', isTouch ? '위쪽 1구역 씨앗 앞에서 씨앗 버튼을 꾹 눌러 훔쳐요' : '위쪽 1구역 씨앗 앞에서 E 키를 꾹 눌러 훔쳐요'); toast('새 시즌! 모든 사람이 처음부터 시작해요 · 구역 주인 스피드와 런닝머신이 새로 바뀌었어요', 'gold'); }
+  if (fresh){ showBanner('씨앗 서리 대작전!', isTouch ? '위쪽 1구역 씨앗 앞에서 씨앗 버튼을 꾹 눌러 훔쳐요' : '위쪽 1구역 씨앗 앞에서 E 키를 꾹 눌러 훔쳐요'); toast('새 시즌! 모든 사람이 처음부터 시작해요 · 천사·해골 구역과 글리치·제우스 런닝머신이 생겼어요', 'gold'); }
   else toast(G.cloud ? '이어서 시작해요 (저장된 진행을 불러왔어요)' : '이어서 시작해요', 'good');
   saveGame(true);
 }

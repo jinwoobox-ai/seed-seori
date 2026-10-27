@@ -1,0 +1,2813 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>window.__OMOK_STANDALONE = true;</script>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}</style>
+<title>오목 훈수 AI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a two-pane workbench. Left: the captured game screen with the hint drawn on it.
+   Right: the "훈수 쪽지" — a clean board diagram, the move, why, and the settings. Stacks on phones. */
+:root {
+  --bg: #ECEFF3;
+  --surface: #FFFFFF;
+  --sunk: #E2E6EB;
+  --ink: #15181D;
+  --muted: #5A6470;
+  --line: #D2D8DF;
+  --accent: #2A55F0;
+  --accent-ink: #FFFFFF;
+  --accent-soft: rgba(42, 85, 240, 0.12);
+  --danger: #D8323B;
+  --danger-soft: rgba(216, 50, 59, 0.11);
+  --good: #17845A;
+  --warn: #A9650E;
+  --warn-soft: rgba(201, 125, 20, 0.14);
+  --wood: #DFB874;
+  --wood-edge: #C99A4E;
+  --wood-line: #4B3A20;
+  --stone-black: #16181C;
+  --stone-white: #F7F7F5;
+  --shadow: 0 1px 2px rgba(20, 24, 30, 0.06), 0 6px 24px rgba(20, 24, 30, 0.06);
+  --font-display: "Black Han Sans", "IBM Plex Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --font-body: "IBM Plex Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1115; --surface: #161A20; --sunk: #1C2129; --ink: #E8ECF1; --muted: #8E98A5; --line: #29303A;
+    --accent: #7390FF; --accent-ink: #0B0E14; --accent-soft: rgba(115, 144, 255, 0.16);
+    --danger: #FF6B70; --danger-soft: rgba(255, 107, 112, 0.14); --good: #45D493; --warn: #F0B04A; --warn-soft: rgba(240, 176, 74, 0.14);
+    --wood: #CDA25C; --wood-edge: #A97E3A; --wood-line: #2F2412;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px rgba(0, 0, 0, 0.25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1115; --surface: #161A20; --sunk: #1C2129; --ink: #E8ECF1; --muted: #8E98A5; --line: #29303A;
+  --accent: #7390FF; --accent-ink: #0B0E14; --accent-soft: rgba(115, 144, 255, 0.16);
+  --danger: #FF6B70; --danger-soft: rgba(255, 107, 112, 0.14); --good: #45D493; --warn: #F0B04A; --warn-soft: rgba(240, 176, 74, 0.14);
+  --wood: #CDA25C; --wood-edge: #A97E3A; --wood-line: #2F2412;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px rgba(0, 0, 0, 0.25);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--bg); }
+body {
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 14px 28px;
+  -webkit-font-smoothing: antialiased;
+}
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+/* header */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand-mark { width: 34px; height: 34px; flex: none; position: relative; }
+.brand-mark i { position: absolute; width: 20px; height: 20px; border-radius: 50%; }
+.brand-mark i:first-child { left: 0; top: 0; background: radial-gradient(circle at 35% 30%, #5b5f66, #0d0e10 70%); }
+.brand-mark i:last-child { right: 0; bottom: 0; background: radial-gradient(circle at 35% 30%, #ffffff, #d8d8d4 75%); box-shadow: 0 0 0 1px rgba(0,0,0,.18); }
+.brand h1 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 26px; letter-spacing: 0.01em; line-height: 1; }
+.brand h1 b { color: var(--accent); font-weight: 400; }
+.brand p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+.status {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--line); font-size: 13px; color: var(--muted); max-width: 100%;
+}
+.status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+.status[data-tone="live"] .dot { background: var(--good); box-shadow: 0 0 0 4px color-mix(in srgb, var(--good) 22%, transparent); }
+.status[data-tone="busy"] .dot { background: var(--accent); animation: blink 1s infinite; }
+.status[data-tone="warn"] .dot { background: var(--warn); }
+.status[data-tone="bad"] .dot { background: var(--danger); }
+@keyframes blink { 50% { opacity: .3; } }
+
+/* main grid */
+.main { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 880px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); min-width: 0; }
+
+/* stage */
+.stage-card { display: flex; flex-direction: column; overflow: hidden; }
+.toolbar { display: flex; gap: 8px; padding: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 38px; padding: 0 14px;
+  border-radius: 9px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: 14px;
+  white-space: nowrap; transition: background .15s, border-color .15s, transform .05s;
+}
+.btn:hover { background: var(--sunk); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
+.btn.on { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent); }
+.btn.small { min-height: 32px; padding: 0 10px; font-size: 13px; font-weight: 600; }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
+.btn.ghost:hover { background: var(--sunk); color: var(--ink); }
+.btn svg { width: 16px; height: 16px; flex: none; }
+.btn kbd { font-family: var(--font-mono); font-size: 11px; padding: 1px 5px; border-radius: 5px; border: 1px solid currentColor; opacity: .7; }
+.stage-wrap { position: relative; background-color: var(--sunk); background-image: radial-gradient(circle, color-mix(in srgb, var(--muted) 30%, transparent) 1.2px, transparent 1.6px); background-size: 22px 22px; aspect-ratio: 4 / 3; max-height: 72vh; min-height: 260px; width: 100%; }
+.stage-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.stage-wrap.dropping { outline: 3px dashed var(--accent); outline-offset: -10px; }
+.badge {
+  position: absolute; left: 12px; top: 12px; padding: 4px 9px; border-radius: 6px; font-size: 12px; font-weight: 600;
+  background: rgba(14, 17, 21, 0.72); color: #fff; letter-spacing: .02em; pointer-events: none;
+}
+.stage-msg {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(92%, 520px);
+  padding: 10px 14px; border-radius: 10px; background: rgba(14, 17, 21, 0.82); color: #fff; font-size: 13px; text-align: center;
+  pointer-events: none; text-wrap: balance;
+}
+.stage-foot { display: flex; align-items: center; gap: 8px; padding: 10px 12px; flex-wrap: wrap; border-top: 1px solid var(--line); }
+.stage-foot .recog { font-size: 13px; color: var(--muted); margin-right: auto; min-width: 0; font-variant-numeric: tabular-nums; }
+.stage-foot .recog b { color: var(--ink); font-weight: 600; }
+.manual-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.select { min-height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); padding: 0 8px; font-size: 13px; }
+
+/* advice slip */
+.side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.advice { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.board-box { position: relative; width: 100%; max-width: 420px; margin: 0 auto; aspect-ratio: 1 / 1; }
+.board-box canvas { width: 100%; height: 100%; display: block; cursor: pointer; touch-action: manipulation; }
+.callout { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; align-items: center; }
+.callout .coord {
+  grid-row: span 2; font-family: var(--font-display); font-size: 46px; line-height: 1; color: var(--accent);
+  min-width: 2.4ch; text-align: center; font-variant-numeric: tabular-nums;
+}
+.callout .coord.wait { color: var(--muted); font-size: 34px; }
+.callout .coord .ax { font-family: var(--font-body); font-size: 0.5em; font-weight: 700; color: var(--muted); margin: 0 0.12em 0 0.3em; vertical-align: 0.35em; }
+.callout .coord .ax:first-child { margin-left: 0; }
+.stone.mark-x, .stone.mark-o { background: none; box-shadow: none; position: relative; }
+.stone.mark-x::before, .stone.mark-x::after { content: ""; position: absolute; left: 1px; right: 1px; top: 8px; height: 3px; border-radius: 2px; background: #2f63e0; transform: rotate(45deg); }
+.stone.mark-x::after { transform: rotate(-45deg); }
+.stone.mark-o { border: 3px solid #e0434c; border-radius: 50%; }
+.evalbar i.bad { background: var(--danger); }
+.turn { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; min-width: 0; }
+.turn .stone { width: 18px; height: 18px; border-radius: 50%; flex: none; }
+.stone.black { background: radial-gradient(circle at 35% 30%, #63676e, #0d0e10 70%); }
+.stone.white { background: radial-gradient(circle at 35% 30%, #ffffff, #d8d8d4 75%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
+.where { color: var(--muted); font-size: 13px; }
+.reason { margin: 0; font-size: 15px; font-weight: 500; text-wrap: pretty; }
+.reason.big-win { color: var(--good); font-weight: 700; }
+.reason.big-danger { color: var(--danger); font-weight: 700; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 999px; background: var(--sunk); color: var(--muted); }
+.chip.danger { background: var(--danger-soft); color: var(--danger); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.accent { background: var(--accent-soft); color: var(--accent); }
+.evalrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.evalbar { height: 8px; border-radius: 99px; background: var(--sunk); overflow: hidden; position: relative; }
+.evalbar i { position: absolute; left: 0; top: 0; bottom: 0; width: 50%; border-radius: 99px; background: var(--accent); transition: width .4s; }
+.evaltext { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.meta { font-family: var(--font-mono); font-size: 11px; color: var(--muted); letter-spacing: .01em; }
+
+/* settings */
+.settings { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.settings h2, .live-card h2 { margin: 0; font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .06em; }
+.field { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 10px; align-items: center; }
+.field > span { font-size: 13px; font-weight: 600; }
+.seg { display: flex; padding: 3px; border-radius: 10px; background: var(--sunk); gap: 2px; min-width: 0; }
+.seg button { flex: 1 1 0; min-width: 0; min-height: 30px; border: 0; border-radius: 7px; background: transparent; font-size: 13px; font-weight: 600; color: var(--muted); padding: 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.hint { margin: -4px 0 0 86px; font-size: 12px; color: var(--muted); }
+@media (max-width: 420px) { .field { grid-template-columns: minmax(0, 1fr); gap: 6px; } .hint { margin-left: 0; } }
+.switch { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.switch input { width: 36px; height: 20px; appearance: none; border-radius: 99px; background: var(--line); position: relative; cursor: pointer; transition: background .2s; flex: none; }
+.switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 2px rgba(0,0,0,.3); }
+.switch input:checked { background: var(--accent); }
+.switch input:checked::after { transform: translateX(16px); }
+
+.live-card { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.live-card p { margin: 0; font-size: 13px; color: var(--muted); }
+.steps { margin: 0; padding-left: 18px; font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
+.steps b { color: var(--ink); }
+
+/* help overlay + toast */
+.overlay { position: fixed; inset: 0; background: rgba(8, 10, 14, 0.55); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+.dialog { width: min(520px, 100%); max-height: 100%; overflow: auto; background: var(--surface); border-radius: 14px; border: 1px solid var(--line); padding: 20px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+.dialog h3 { margin: 0; font-size: 18px; text-wrap: balance; }
+.dialog p { margin: 0; color: var(--muted); font-size: 14px; }
+.dialog .row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--surface); padding: 10px 16px; border-radius: 10px; font-size: 14px; z-index: 60; max-width: calc(100% - 32px); box-shadow: 0 8px 30px rgba(0,0,0,.3); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"><i></i><i></i></div>
+      <div>
+        <h1>오목 <b>훈수</b> AI</h1>
+        <p>게임 화면을 보고 다음 수를 짚어 줘요</p>
+      </div>
+    </div>
+    <div class="status" id="status" data-tone="idle" role="status" aria-live="polite"><span class="dot"></span><span id="statusText">준비됨</span></div>
+  </header>
+
+  <main class="main">
+    <section class="card stage-card" aria-label="게임 화면">
+      <div class="toolbar">
+        <button class="btn primary" id="btnLive" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+          <span id="btnLiveText">화면 보기 시작</span>
+        </button>
+        <button class="btn" id="btnPaste" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/></svg>
+          스크린샷 붙여넣기 <kbd>Ctrl V</kbd>
+        </button>
+        <button class="btn" id="btnFile" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>
+          이미지 열기
+        </button>
+        <button class="btn" id="btnManual" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4zM4 10h16M4 14h16M10 4v16M14 4v16"/></svg>
+          직접 놓기
+        </button>
+        <input type="file" id="fileInput" accept="image/*" class="sr" tabindex="-1">
+      </div>
+      <div class="stage-wrap" id="stageWrap">
+        <canvas id="stage" aria-label="게임 화면과 추천 위치"></canvas>
+        <div class="badge" id="badge">예시 화면</div>
+        <div class="stage-msg" id="stageMsg" hidden></div>
+      </div>
+      <div class="stage-foot">
+        <div class="recog" id="recog">예시 판 · 15줄</div>
+        <div class="manual-bar" id="manualBar" hidden>
+          <select class="select" id="manualSize" aria-label="판 크기">
+            <option value="15">15줄</option>
+            <option value="19">19줄</option>
+          </select>
+          <button class="btn small" id="btnUndo" type="button">무르기</button>
+          <button class="btn small" id="btnClear" type="button">비우기</button>
+          <button class="btn small" id="btnPlayAI" type="button">추천 수 놓기</button>
+        </div>
+        <div class="manual-bar" id="recogBar">
+          <button class="btn small ghost" id="btnZoom" type="button">전체 화면</button>
+          <button class="btn small ghost" id="btnRegion" type="button">판 위치 지정</button>
+          <button class="btn small ghost" id="btnRedetect" type="button">다시 찾기</button>
+          <button class="btn small" id="btnStop" type="button" hidden>화면 보기 멈춤</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="card advice" aria-label="추천 수">
+        <div class="board-box"><canvas id="board" aria-label="판 그림과 추천 수 (눌러서 돌 고치기)"></canvas></div>
+        <div class="callout">
+          <div class="coord" id="coord">–</div>
+          <div class="turn" id="turn"><span class="stone black"></span><span id="turnText">흑 차례</span></div>
+          <div class="where" id="where">판을 읽으면 여기에 추천 수가 나와요</div>
+        </div>
+        <p class="reason" id="reason">스크린샷을 붙여넣거나 화면 보기를 시작하세요.</p>
+        <div class="chips" id="chips"></div>
+        <div class="evalrow" id="evalRow" hidden>
+          <div class="evalbar"><i id="evalFill"></i></div>
+          <div class="evaltext" id="evalText"></div>
+        </div>
+        <div class="actions">
+          <button class="btn small" id="btnPip" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><rect x="12" y="11" width="7" height="6" rx="1" fill="currentColor"/></svg>
+            미니창 띄우기
+          </button>
+          <button class="btn small" id="btnLine" type="button">수순 보기</button>
+          <button class="btn small ghost" id="btnTurn" type="button">차례 바꾸기</button>
+        </div>
+        <div class="meta" id="meta"></div>
+      </section>
+
+      <section class="card settings" aria-label="설정">
+        <h2>규칙과 설정</h2>
+        <div class="field"><span>규칙</span>
+          <div class="seg" id="segRule" role="group" aria-label="규칙">
+            <button type="button" data-v="0">자유룰</button>
+            <button type="button" data-v="1">렌주룰</button>
+            <button type="button" data-v="2">쌍삼 금지</button>
+          </div>
+        </div>
+        <p class="hint" id="ruleHint">금지 수 없음 · 6목 이상도 승리</p>
+        <div class="field"><span>내 돌</span>
+          <div class="seg" id="segMe" role="group" aria-label="내 돌">
+            <button type="button" data-v="0">자동</button>
+            <button type="button" data-v="1">흑</button>
+            <button type="button" data-v="2">백</button>
+          </div>
+        </div>
+        <div class="field"><span>생각 시간</span>
+          <div class="seg" id="segTime" role="group" aria-label="생각 시간">
+            <button type="button" data-v="600">빠르게</button>
+            <button type="button" data-v="1500">보통</button>
+            <button type="button" data-v="4000">깊게</button>
+          </div>
+        </div>
+        <div class="field"><span>돌 위치</span>
+          <div class="seg" id="segMode" role="group" aria-label="돌 놓는 곳">
+            <button type="button" data-v="auto">자동</button>
+            <button type="button" data-v="point">선 위</button>
+            <button type="button" data-v="cell">칸 안</button>
+          </div>
+        </div>
+        <label class="switch"><input type="checkbox" id="swapColors"> 흑백 반대로 읽기</label>
+        <label class="switch"><input type="checkbox" id="soundOn"> 내 차례에 알림음</label>
+      </section>
+
+      <section class="card live-card" id="liveCard" hidden>
+        <h2>실시간 화면 보기</h2>
+        <p id="liveCardText">이 페이지 안에서는 화면 공유가 막혀 있어요. 아래 버튼으로 내려받아 크롬이나 엣지로 열면 게임 창을 계속 보면서 훈수해 줘요.</p>
+        <button class="btn primary" id="btnGetLive" type="button">실시간 버전 내려받기</button>
+        <ol class="steps">
+          <li>받은 <b>오목훈수AI.html</b> 파일을 더블클릭</li>
+          <li><b>화면 보기 시작</b> → 오목 게임 창 선택</li>
+          <li><b>미니창 띄우기</b>로 추천 수를 항상 위에</li>
+        </ol>
+      </section>
+    </aside>
+  </main>
+</div>
+
+<div class="overlay" id="helpOverlay" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <h3 id="helpTitle">여기서는 화면 공유를 쓸 수 없어요</h3>
+    <p id="helpBody">이 페이지는 보안 때문에 화면을 직접 볼 수 없어요. 대신 이렇게 쓰세요.</p>
+    <ol class="steps">
+      <li><b>스크린샷 붙여넣기</b>: 윈도우는 <b>Win + Shift + S</b>, 맥은 <b>Cmd + Ctrl + Shift + 4</b>로 게임 판을 찍고 이 페이지에서 <b>Ctrl + V</b></li>
+      <li id="helpLive"><b>실시간 버전</b>: 파일로 내려받아 브라우저로 열면 게임 창을 계속 보면서 알려 줘요</li>
+    </ol>
+    <div class="row">
+      <button class="btn" id="helpClose" type="button">닫기</button>
+      <button class="btn primary" id="helpGet" type="button">실시간 버전 받기</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+<video id="liveVideo" muted playsinline class="sr" aria-hidden="true"></video>
+
+<script>
+/* =====================================================================
+ * Omok engine
+ *  - line pattern tables (59049 keys, free / exact-five)
+ *  - incremental per-cell threat classes
+ *  - renju & "no double-three" forbidden-move checks
+ *  - VCF / VCT threat-space search
+ *  - PVS alpha-beta with threat pruning + transposition table
+ * Pure JS: runs in a Web Worker, on the main thread, or in Node.
+ * ===================================================================== */
+function OmokEngine() {
+  'use strict';
+  var EMPTY = 0, BLACK = 1, WHITE = 2, WALL = 3, PAD = 5;
+  // direction patterns: what placing a stone here makes, in one line
+  var P_NONE = 0, P_B1 = 1, P_F1 = 2, P_B2 = 3, P_F2 = 4, P_B3 = 5, P_F3 = 6,
+      P_B4 = 7, P_F4 = 8, P_DF4 = 9, P_F5 = 10, P_OL = 11;
+  // cell threat classes (4 directions combined)
+  var T_NONE = 0, T_2 = 1, T_2P = 2, T_F3 = 3, T_3P = 4, T_B4 = 5, T_4P = 6,
+      T_33 = 7, T_43 = 8, T_F4 = 9, T_FIVE = 10;
+  var RULE_FREE = 0, RULE_RENJU = 1, RULE_NO33 = 2;
+  var WIN = 1000000, WIN_TH = WIN - 5000, INF = 1 << 30;
+  var POW3 = [1, 3, 9, 27, 81, 243, 729, 2187, 6561, 19683, 59049];
+  var NKEY = 59049;
+  var DEFAULT_PARAMS = {
+    dir: [0, 0, 1, 8, 40, 45, 300, 280, 3000, 3000, 30000, 0],
+    cls: [0, 0, 20, 0, 50, 0, 80, 1500, 4000, 5000, 0],
+    opp: 1.0, combo: 6000, tempo: 1500
+  };
+  var DIRVAL = DEFAULT_PARAMS.dir.slice(), CLSBONUS = DEFAULT_PARAMS.cls.slice();
+  var OPPW = DEFAULT_PARAMS.opp, COMBO = DEFAULT_PARAMS.combo, TEMPO = DEFAULT_PARAMS.tempo;
+  var lastCfg = '';
+  function configure(p) {
+    p = p || {};
+    DIRVAL = (p.dir || DEFAULT_PARAMS.dir).slice();
+    CLSBONUS = (p.cls || DEFAULT_PARAMS.cls).slice();
+    OPPW = p.opp != null ? p.opp : DEFAULT_PARAMS.opp;
+    COMBO = p.combo != null ? p.combo : DEFAULT_PARAMS.combo;
+    TEMPO = p.tempo != null ? p.tempo : DEFAULT_PARAMS.tempo;
+    var sig = DIRVAL.join(',') + '|' + CLSBONUS.join(',');
+    if (sig !== lastCfg) { lastCfg = sig; buildComb(); }
+  }
+  // combined 4-direction tables, index = a0 + 12*a1 + 144*a2 + 1728*a3
+  var COMB = 20736, CM = [1, 12, 144, 1728];
+  var combCls = [new Uint8Array(COMB), new Uint8Array(COMB), new Uint8Array(COMB)];
+  var combSc = [new Int32Array(COMB), new Int32Array(COMB), new Int32Array(COMB)];
+  var combFb = [new Uint8Array(COMB), new Uint8Array(COMB), new Uint8Array(COMB)];
+  var combMax = new Uint8Array(COMB);
+  function buildComb() {
+    var cntP = new Int32Array(12);
+    for (var cb = 0; cb < COMB; cb++) {
+      var a = [cb % 12, ((cb / 12) | 0) % 12, ((cb / 144) | 0) % 12, ((cb / 1728) | 0) % 12];
+      cntP.fill(0);
+      var s0 = 0, mx = 0;
+      for (var d = 0; d < 4; d++) { cntP[a[d]]++; s0 += DIRVAL[a[d]]; if (a[d] !== P_OL && a[d] > mx) mx = a[d]; }
+      combMax[cb] = mx;
+      var nF4 = cntP[P_F4] + cntP[P_DF4], nB4 = cntP[P_B4], nF3 = cntP[P_F3], nB3 = cntP[P_B3], nF2 = cntP[P_F2], nOL = cntP[P_OL];
+      var fours = nB4 + cntP[P_F4] + 2 * cntP[P_DF4];
+      for (var fr = 0; fr < 3; fr++) {
+        var k, f = 0, s = s0;
+        if (cntP[P_F5]) k = T_FIVE;
+        else {
+          if (fr === 1 && (nOL || fours >= 2 || nF3 >= 2)) f = 1;
+          else if (fr === 2 && nF3 >= 2) f = 1;
+          if (f) { k = T_NONE; s = 0; }
+          else if (nF4 || fours >= 2) k = T_F4;
+          else if (nB4 && nF3) k = T_43;
+          else if (nF3 >= 2) k = T_33;
+          else if (nB4 && (nB3 || nF2)) k = T_4P;
+          else if (nB4) k = T_B4;
+          else if (nF3 && (nB3 || nF2)) k = T_3P;
+          else if (nF3) k = T_F3;
+          else if (nB3 + nF2 >= 2) k = T_2P;
+          else if (nB3 || nF2) k = T_2;
+          else k = T_NONE;
+          s += CLSBONUS[k];
+        }
+        combCls[fr][cb] = k; combSc[fr][cb] = s; combFb[fr][cb] = f;
+      }
+    }
+  }
+
+  /* ---------- pattern tables ---------- */
+  function runLen(a) {
+    var n = 1, i;
+    for (i = 4; i >= 0 && a[i] === 1; i--) n++;
+    for (i = 6; i <= 10 && a[i] === 1; i++) n++;
+    return n;
+  }
+  function buildTable(exact) {
+    var tab = new Int8Array(NKEY), a = new Int8Array(11);
+    // a key with one more own stone is numerically larger, so walk downwards
+    for (var key = NKEY - 1; key >= 0; key--) {
+      var k = key, i;
+      for (i = 0; i < 11; i++) {
+        if (i === 5) { a[5] = 1; continue; }
+        var dg = k % 3; a[i] = dg; k = (k - dg) / 3;
+      }
+      var run = runLen(a), res;
+      if (exact ? run === 5 : run >= 5) res = P_F5;
+      else if (exact && run > 5) res = P_OL;
+      else {
+        var nf = 0, f0 = -1, f1 = -1;
+        for (i = 1; i <= 9; i++) {
+          if (i === 5 || a[i] !== 0) continue;
+          a[i] = 1; var r = runLen(a); a[i] = 0;
+          if (exact ? r === 5 : r >= 5) { if (nf === 0) f0 = i; else f1 = i; nf++; }
+        }
+        if (nf >= 2) res = (nf === 2 && f1 - f0 === 5) ? P_F4 : P_DF4;
+        else if (nf === 1) res = P_B4;
+        else {
+          res = P_NONE;
+          for (i = 1; i <= 9; i++) {
+            if (i === 5 || a[i] !== 0) continue;
+            var p2 = tab[key + POW3[i < 5 ? i : i - 1]], lv;
+            if (p2 === P_F4 || (!exact && p2 === P_DF4)) lv = P_F3;
+            else if (p2 === P_B4 || (exact && p2 === P_DF4)) lv = P_B3;
+            else if (p2 === P_F3) lv = P_F2;
+            else if (p2 === P_B3) lv = P_B2;
+            else if (p2 === P_F2) lv = P_F1;
+            else if (p2 === P_B2) lv = P_B1;
+            else lv = P_NONE;
+            if (lv > res) res = lv;
+          }
+        }
+      }
+      tab[key] = res;
+    }
+    return tab;
+  }
+  var TAB_FREE = buildTable(false), TAB_EXACT = buildTable(true);
+  configure(null);
+  /* ---------- board state ---------- */
+  var N = 0, W = 0, S = 0, D0 = 1, D1 = 0, D2 = 0, D3 = 0, DIRS = [0, 0, 0, 0];
+  var board, keys, pat, cb, cls, sc, maxp, fb, near, near1, zLo, zHi;
+  var cnt = new Int32Array(48), sumA = [0, 0, 0];
+  var tabFor = [null, TAB_FREE, TAB_FREE], forbRule = [0, 0, 0], rule = 0;
+  var hLo = 0, hHi = 0;
+  var stk = new Int32Array(2048), bbStk = new Int32Array(2048 * 4), sp = 0;
+  var bx0 = 0, bx1 = -1, by0 = 0, by1 = -1;
+  var SIDE_LO = 0x5bd1e995 | 0, SIDE_HI = 0x2c1b3c6d | 0;
+  var RX0 = 0, RX1 = 0, RY0 = 0, RY1 = 0;
+
+  function idx(x, y) { return (y + PAD) * W + x + PAD; }
+  function px(p) { return p % W - PAD; }
+  function py(p) { return ((p / W) | 0) - PAD; }
+  function rg() {
+    if (bx1 < bx0) { RX0 = RX1 = RY0 = RY1 = N >> 1; return; }
+    RX0 = bx0 - 2; if (RX0 < 0) RX0 = 0;
+    RX1 = bx1 + 2; if (RX1 > N - 1) RX1 = N - 1;
+    RY0 = by0 - 2; if (RY0 < 0) RY0 = 0;
+    RY1 = by1 + 2; if (RY1 > N - 1) RY1 = N - 1;
+  }
+
+  function setup(n, r) {
+    if (n !== N) {
+      N = n; W = N + 2 * PAD; S = W * W;
+      D0 = 1; D1 = W; D2 = W + 1; D3 = W - 1; DIRS = [D0, D1, D2, D3];
+      board = new Uint8Array(S); keys = new Int32Array(8 * S); pat = new Uint8Array(8 * S);
+      cb = new Int32Array(3 * S);
+      cls = new Uint8Array(3 * S); sc = new Int32Array(3 * S);
+      maxp = new Uint8Array(3 * S); fb = new Uint8Array(3 * S);
+      near = new Uint8Array(S); near1 = new Uint8Array(S); zLo = new Int32Array(3 * S); zHi = new Int32Array(3 * S);
+      var seed = (0x9E3779B9 ^ (n * 7919)) | 0;
+      for (var i = 0; i < 3 * S; i++) {
+        seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; zLo[i] = seed;
+        seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; zHi[i] = seed;
+      }
+    }
+    rule = r;
+    tabFor[1] = r === RULE_RENJU ? TAB_EXACT : TAB_FREE;
+    tabFor[2] = TAB_FREE;
+    forbRule[1] = r === RULE_RENJU ? 1 : (r === RULE_NO33 ? 2 : 0);
+    forbRule[2] = r === RULE_NO33 ? 2 : 0;
+    board.fill(WALL); near.fill(0); near1.fill(0); cls.fill(0); sc.fill(0); maxp.fill(0); fb.fill(0); pat.fill(0); cb.fill(0);
+    cnt.fill(0); sumA[1] = 0; sumA[2] = 0; hLo = 0; hHi = 0; sp = 0;
+    bx0 = by0 = 1 << 20; bx1 = by1 = -(1 << 20);
+    var x, y, p, d, o;
+    for (y = 0; y < N; y++) for (x = 0; x < N; x++) board[idx(x, y)] = EMPTY;
+    for (p = 0; p < S; p++) {
+      if (board[p] === WALL) continue;
+      for (d = 0; d < 4; d++) {
+        var dir = DIRS[d], k = 0;
+        for (o = -5; o <= 5; o++) {
+          if (o === 0) continue;
+          if (board[p + o * dir] === WALL) k += 2 * POW3[o < 0 ? o + 5 : o + 4];
+        }
+        keys[d * S + p] = k; keys[4 * S + d * S + p] = k;
+      }
+    }
+    cnt[16] = N * N; cnt[32] = N * N;
+    for (y = 0; y < N; y++) for (x = 0; x < N; x++) { p = idx(x, y); fullEval(1, p); fullEval(2, p); }
+  }
+
+  function fullEval(c, p) {
+    var t = tabFor[c], b = (c - 1) * 4 * S + p;
+    var a0 = t[keys[b]], a1 = t[keys[b + S]], a2 = t[keys[b + 2 * S]], a3 = t[keys[b + 3 * S]];
+    pat[b] = a0; pat[b + S] = a1; pat[b + 2 * S] = a2; pat[b + 3 * S] = a3;
+    cb[c * S + p] = a0 + 12 * a1 + 144 * a2 + 1728 * a3;
+    classify(c, p);
+  }
+  function dirEval(c, p, d) {
+    var b = (c - 1) * 4 * S + d * S + p;
+    var np = tabFor[c][keys[b]], op = pat[b];
+    if (np === op) return;
+    pat[b] = np;
+    cb[c * S + p] += (np - op) * CM[d];
+    classify(c, p);
+  }
+  function classify(c, p) {
+    var i = c * S + p, x = cb[i], fr = forbRule[c];
+    var k = combCls[fr][x], s = combSc[fr][x];
+    cnt[c * 16 + cls[i]]--; cnt[c * 16 + k]++;
+    sumA[c] += s - sc[i];
+    cls[i] = k; sc[i] = s; maxp[i] = combMax[x]; fb[i] = combFb[fr][x];
+  }
+  function clearCell(c, p) {
+    var i = c * S + p;
+    cnt[c * 16 + cls[i]]--; cnt[c * 16]++;
+    sumA[c] -= sc[i];
+    cls[i] = 0; sc[i] = 0; maxp[i] = 0; fb[i] = 0;
+  }
+  function updKeys(p, c, sg) {
+    var ob = (c - 1) * 4 * S, pb = (2 - c) * 4 * S;
+    for (var d = 0; d < 4; d++) {
+      var dir = DIRS[d], od = ob + d * S, pd = pb + d * S;
+      for (var k = 1; k <= 5; k++) {
+        var q = p - k * dir, w;
+        if (board[q] !== WALL) { w = POW3[4 + k] * sg; keys[od + q] += w; keys[pd + q] += 2 * w; }
+        q = p + k * dir;
+        if (board[q] !== WALL) { w = POW3[5 - k] * sg; keys[od + q] += w; keys[pd + q] += 2 * w; }
+      }
+    }
+  }
+  function reevalLines(p) {
+    for (var d = 0; d < 4; d++) {
+      var dir = DIRS[d];
+      for (var k = 1; k <= 5; k++) {
+        var q = p - k * dir;
+        if (board[q] === EMPTY) { dirEval(1, q, d); dirEval(2, q, d); }
+        q = p + k * dir;
+        if (board[q] === EMPTY) { dirEval(1, q, d); dirEval(2, q, d); }
+      }
+    }
+  }
+  function place(p, c) {
+    var x = px(p), y = py(p), b4 = sp * 4;
+    bbStk[b4] = bx0; bbStk[b4 + 1] = bx1; bbStk[b4 + 2] = by0; bbStk[b4 + 3] = by1;
+    stk[sp++] = p;
+    if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y;
+    board[p] = c;
+    hLo ^= zLo[c * S + p]; hHi ^= zHi[c * S + p];
+    clearCell(1, p); clearCell(2, p);
+    updKeys(p, c, 1);
+    reevalLines(p);
+    for (var dy = -2; dy <= 2; dy++) { var r = p + dy * W; for (var dx = -2; dx <= 2; dx++) near[r + dx]++; }
+    near1[p - W - 1]++; near1[p - W]++; near1[p - W + 1]++; near1[p - 1]++; near1[p + 1]++; near1[p + W - 1]++; near1[p + W]++; near1[p + W + 1]++;
+  }
+  function remove() {
+    var p = stk[--sp], c = board[p], b4 = sp * 4;
+    board[p] = EMPTY;
+    hLo ^= zLo[c * S + p]; hHi ^= zHi[c * S + p];
+    updKeys(p, c, -1);
+    reevalLines(p);
+    fullEval(1, p); fullEval(2, p);
+    for (var dy = -2; dy <= 2; dy++) { var r = p + dy * W; for (var dx = -2; dx <= 2; dx++) near[r + dx]--; }
+    near1[p - W - 1]--; near1[p - W]--; near1[p - W + 1]--; near1[p - 1]--; near1[p + 1]--; near1[p + W - 1]--; near1[p + W]--; near1[p + W + 1]--;
+    bx0 = bbStk[b4]; bx1 = bbStk[b4 + 1]; by0 = bbStk[b4 + 2]; by1 = bbStk[b4 + 3];
+  }
+  function undoTo(n) { while (sp > n) remove(); }
+
+  /* ---------- forbidden moves ---------- */
+  function tempPlace(p, c) { board[p] = c; updKeys(p, c, 1); }
+  function tempRemove(p, c) { board[p] = EMPTY; updKeys(p, c, -1); }
+  function isRealThree(c, p, d, depth) {
+    var t = tabFor[c], kb = (c - 1) * 4 * S + d * S, dir = DIRS[d];
+    for (var k = -4; k <= 4; k++) {
+      if (k === 0) continue;
+      var e = p + k * dir;
+      if (board[e] !== EMPTY) continue;
+      if (t[keys[kb + e]] === P_F4 && !isForbidden(c, e, depth + 1)) return true;
+    }
+    return false;
+  }
+  function isForbidden(c, p, depth) {
+    var fr = forbRule[c];
+    if (!fr || board[p] !== EMPTY) return false;
+    var t = tabFor[c], b = (c - 1) * 4 * S + p, d, pt;
+    var pats = [t[keys[b]], t[keys[b + S]], t[keys[b + 2 * S]], t[keys[b + 3 * S]]];
+    var fours = 0, nF3 = 0, ol = 0;
+    for (d = 0; d < 4; d++) {
+      pt = pats[d];
+      if (pt === P_F5) return false;
+      if (pt === P_OL) ol = 1;
+      if (pt === P_B4 || pt === P_F4) fours++;
+      else if (pt === P_DF4) fours += 2;
+      else if (pt === P_F3) nF3++;
+    }
+    if (fr === 1) {
+      if (ol) return true;
+      if (fours >= 2) return true;
+    }
+    if (nF3 < 2) return false;
+    if (depth >= 3) return true;
+    tempPlace(p, c);
+    var threes = 0;
+    for (d = 0; d < 4 && threes < 2; d++) if (pats[d] === P_F3 && isRealThree(c, p, d, depth)) threes++;
+    tempRemove(p, c);
+    return threes >= 2;
+  }
+  function legal(c, p) { return board[p] === EMPTY && !(fb[c * S + p] && isForbidden(c, p, 0)); }
+
+  /* ---------- helpers ---------- */
+  var nFive = 0;
+  function findFive(c) {
+    var first = -1; nFive = 0; rg();
+    var x0 = RX0, x1 = RX1, y0 = RY0, y1 = RY1, base = c * S;
+    for (var y = y0; y <= y1; y++) {
+      var p = idx(x0, y);
+      for (var x = x0; x <= x1; x++, p++) {
+        if (board[p] === EMPTY && cls[base + p] === T_FIVE) { if (first < 0) first = p; nFive++; }
+      }
+    }
+    return first;
+  }
+  function listClass(c, k) {
+    var out = []; rg();
+    var x0 = RX0, x1 = RX1, y0 = RY0, y1 = RY1, base = c * S;
+    for (var y = y0; y <= y1; y++) {
+      var p = idx(x0, y);
+      for (var x = x0; x <= x1; x++, p++) if (board[p] === EMPTY && cls[base + p] === k) out.push(p);
+    }
+    return out;
+  }
+  function fourMoveCount(c) { return cnt[c * 16 + T_B4] + cnt[c * 16 + T_4P] + cnt[c * 16 + T_43]; }
+
+  /* ---------- time / node control ---------- */
+  var nodes = 0, deadline = 0, STOP = { stop: true };
+  function tick() { if ((++nodes & 1023) === 0 && Date.now() > deadline) throw STOP; }
+
+  /* ---------- VCF ---------- */
+  var VBITS = 18, VSIZE = 1 << VBITS, VMASK = VSIZE - 1;
+  var vHi = new Int32Array(VSIZE), vLo = new Int32Array(VSIZE), vRes = new Int8Array(VSIZE);
+  var vcfLine = [], vcfNodeLimit = 0, vcfNodes = 0;
+  var VB = [], VK = [];
+  for (var vb = 0; vb < 160; vb++) { VB.push(new Int32Array(400)); VK.push(new Int32Array(400)); }
+  function vcf(side, ply, depthLeft) {
+    tick();
+    if (++vcfNodes > vcfNodeLimit) return false;
+    var opp = 3 - side;
+    if (cnt[side * 16 + T_FIVE] > 0) { vcfLine.length = ply; return true; }
+    if (cnt[opp * 16 + T_FIVE] > 0) {
+      var q = findFive(opp);
+      if (nFive >= 2) return false;
+      if (maxp[side * S + q] < P_B4) return false;
+      if (!legal(side, q)) return false;
+      return vcfMove(side, q, ply, depthLeft);
+    }
+    if (cnt[side * 16 + T_F4] > 0) {
+      var f = listClass(side, T_F4);
+      vcfLine.length = ply; if (f.length) vcfLine.push(f[0]);
+      return true;
+    }
+    if (depthLeft <= 0 || ply >= 150) return false;
+    var hl = side === 2 ? hLo ^ SIDE_LO : hLo, hh = side === 2 ? hHi ^ SIDE_HI : hHi, vi = hl & VMASK;
+    if (vLo[vi] === hl && vHi[vi] === hh && vRes[vi] !== 0) {
+      if (vRes[vi] === 1) { /* proven win, but we need a line: search again */ }
+      else if (-vRes[vi] >= depthLeft) return false;
+    }
+    // collect four moves
+    var mb = VB[ply], kb = VK[ply], n = 0, base = side * S;
+    rg();
+    var x0 = RX0, x1 = RX1, y0 = RY0, y1 = RY1;
+    for (var y = y0; y <= y1; y++) {
+      var p = idx(x0, y);
+      for (var x = x0; x <= x1; x++, p++) {
+        if (board[p] !== EMPTY || maxp[base + p] < P_B4) continue;
+        var key = cls[base + p] * 100000 + sc[base + p];
+        var j = n - 1;
+        while (j >= 0 && kb[j] < key) { mb[j + 1] = mb[j]; kb[j + 1] = kb[j]; j--; }
+        mb[j + 1] = p; kb[j + 1] = key; n++;
+        if (n >= 399) break;
+      }
+    }
+    for (var i = 0; i < n; i++) {
+      var m = mb[i];
+      if (!legal(side, m)) continue;
+      if (vcfMove(side, m, ply, depthLeft)) { vLo[vi] = hl; vHi[vi] = hh; vRes[vi] = 1; return true; }
+      if (vcfNodes > vcfNodeLimit) return false;
+    }
+    vLo[vi] = hl; vHi[vi] = hh; vRes[vi] = -Math.max(1, Math.min(127, depthLeft));
+    return false;
+  }
+  function vcfMove(side, p, ply, depthLeft) {
+    var opp = 3 - side, r = false;
+    place(p, side);
+    var q = -1, nq = 0, base = side * S;
+    for (var d = 0; d < 4; d++) {
+      var dir = DIRS[d];
+      for (var k = -4; k <= 4; k++) {
+        if (k === 0) continue;
+        var e = p + k * dir;
+        if (board[e] === EMPTY && cls[base + e] === T_FIVE) { if (q < 0) q = e; nq++; }
+      }
+    }
+    if (nq >= 2) { vcfLine.length = ply; vcfLine.push(p); r = true; }
+    else if (nq === 1) {
+      if (fb[opp * S + q] && isForbidden(opp, q, 0)) { vcfLine.length = ply; vcfLine.push(p, q); r = true; }
+      else {
+        place(q, opp);
+        r = vcf(side, ply + 2, depthLeft - 1);
+        remove();
+        if (r) { vcfLine[ply] = p; vcfLine[ply + 1] = q; }
+      }
+    }
+    remove();
+    return r;
+  }
+  function runVcf(side, depth, limit) {
+    vcfNodes = 0; vcfNodeLimit = limit; vcfLine = [];
+    return vcf(side, 0, depth);
+  }
+
+  /* ---------- VCT ---------- */
+  var tBits = 18, tSize = 1 << tBits, tMask = tSize - 1;
+  var cHi = new Int32Array(tSize), cLo = new Int32Array(tSize), cRes = new Int8Array(tSize);
+  var vctNodes = 0, vctLimit = 0, vctLine = [], VCT_STOP = { vctStop: true };
+  function vctTick() { if (++vctNodes > vctLimit) throw VCT_STOP; tick(); }
+  function threatMoves(A) {
+    var out = []; rg();
+    var x0 = RX0, x1 = RX1, y0 = RY0, y1 = RY1, base = A * S, ob = (3 - A) * S;
+    for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) {
+      var p = idx(x, y), i = base + p;
+      if (board[p] !== EMPTY) continue;
+      var k = cls[i];
+      if ((k >= T_F3 && k !== T_FIVE) || (fb[i] && maxp[i] >= P_F3)) {
+        if (fb[i] && isForbidden(A, p, 0)) continue;
+        out.push(p);
+      }
+    }
+    out.sort(function (a, b) { return (cls[base + b] * 100000 + sc[base + b] + sc[ob + b]) - (cls[base + a] * 100000 + sc[base + a] + sc[ob + a]); });
+    return out;
+  }
+  function vctAttack(A, depth, ply) {
+    vctTick();
+    var D = 3 - A;
+    if (cnt[A * 16 + T_FIVE] > 0) { vctLine.length = ply; return true; }
+    if (cnt[D * 16 + T_FIVE] > 0) {
+      var q = findFive(D);
+      if (nFive >= 2) return false;
+      if (!legal(A, q)) return false;
+      place(q, A); var rr = vctDefend(A, depth, ply + 1); remove();
+      if (rr) vctLine[ply] = q;
+      return rr;
+    }
+    if (cnt[A * 16 + T_F4] > 0) {
+      var f = listClass(A, T_F4);
+      vctLine.length = ply; vctLine.push(f[0]); return true;
+    }
+    if (fourMoveCount(A) > 0) {
+      var sv = vcfNodeLimit, sn = vcfNodes, sl = vcfLine;
+      vcfNodes = 0; vcfNodeLimit = 3000; vcfLine = [];
+      var ok = vcf(A, 0, 12), line = vcfLine;
+      vcfNodeLimit = sv; vcfNodes = sn; vcfLine = sl;
+      if (ok) { vctLine.length = ply; for (var z = 0; z < line.length; z++) vctLine.push(line[z]); return true; }
+    }
+    if (depth <= 0) return false;
+    var hl = A === 2 ? hLo ^ SIDE_LO : hLo, hh = A === 2 ? hHi ^ SIDE_HI : hHi, i0 = (hl ^ 0x1234567) & tMask;
+    if (cLo[i0] === hl && cHi[i0] === hh && cRes[i0] < 0 && -cRes[i0] >= depth) return false;
+    var moves = threatMoves(A);
+    if (moves.length > 14) moves.length = 14;
+    for (var j = 0; j < moves.length; j++) {
+      var m = moves[j];
+      place(m, A);
+      var r = vctDefend(A, depth - 1, ply + 1);
+      remove();
+      if (r) { vctLine[ply] = m; return true; }
+    }
+    cLo[i0] = hl; cHi[i0] = hh; cRes[i0] = -Math.min(127, depth);
+    return false;
+  }
+  function vctDefend(A, depth, ply) {
+    vctTick();
+    var D = 3 - A;
+    if (cnt[D * 16 + T_FIVE] > 0) return false;
+    if (cnt[A * 16 + T_FIVE] > 0) {
+      var q = findFive(A);
+      if (nFive >= 2) { vctLine.length = ply; return true; }
+      if (!legal(D, q)) { vctLine.length = ply; return true; }
+      place(q, D); var rr = vctAttack(A, depth, ply + 1); remove();
+      if (rr) vctLine[ply] = q;
+      return rr;
+    }
+    if (cnt[A * 16 + T_F4] === 0) return false;
+    if (cnt[D * 16 + T_F4] > 0) return false;
+    var defs = []; rg();
+    var x0 = RX0, x1 = RX1, y0 = RY0, y1 = RY1, ab = A * S, db = D * S;
+    for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) {
+      var p = idx(x, y);
+      if (board[p] !== EMPTY) continue;
+      if (maxp[ab + p] >= P_B4 || maxp[db + p] >= P_B4) { if (legal(D, p)) defs.push(p); }
+    }
+    if (!defs.length) { vctLine.length = ply; return true; }
+    var firstLine = null;
+    for (var j = 0; j < defs.length; j++) {
+      place(defs[j], D);
+      var r = vctAttack(A, depth, ply + 1);
+      remove();
+      if (!r) return false;
+      if (!firstLine) { firstLine = vctLine.slice(0); firstLine[ply] = defs[j]; }
+    }
+    vctLine = firstLine;
+    return true;
+  }
+
+  /* ---------- alpha-beta ---------- */
+  var TBITS = 20, TSIZE = 1 << TBITS, TMASK = TSIZE - 1;
+  var ttHi = new Int32Array(TSIZE), ttLo = new Int32Array(TSIZE), ttVal = new Int32Array(TSIZE),
+      ttDep = new Int8Array(TSIZE), ttFlag = new Uint8Array(TSIZE), ttMove = new Int16Array(TSIZE);
+  var MB = [], SB = [];
+  for (var pl = 0; pl < 160; pl++) { MB.push(new Int32Array(512)); SB.push(new Int32Array(512)); }
+  var extLimit = 20;
+
+  function evaluate(side) {
+    var opp = 3 - side;
+    var e = sumA[side] - sumA[opp] * OPPW + TEMPO;
+    if ((cnt[side * 16 + T_43] + cnt[side * 16 + T_33]) > 0 && fourMoveCount(opp) === 0 && cnt[opp * 16 + T_F4] === 0) e += COMBO;
+    return e | 0;
+  }
+  function gen(side, ply, limit) {
+    var opp = 3 - side, mb = MB[ply], sb = SB[ply], n = 0;
+    var defend = cnt[opp * 16 + T_F4] > 0;
+    var opening = sp < 6 && !defend;           // early moves stay next to the stones already played
+    rg();
+    var x0 = RX0, x1 = RX1, y0 = RY0, y1 = RY1, sbase = side * S, obase = opp * S;
+    for (var y = y0; y <= y1; y++) {
+      var p = idx(x0, y);
+      for (var x = x0; x <= x1; x++, p++) {
+        if (board[p] !== EMPTY || near[p] === 0) continue;
+        if (opening && near1[p] === 0) continue;
+        var is = sbase + p, io = obase + p;
+        if (defend && !(maxp[io] >= P_B4 || maxp[is] >= P_B4)) continue;
+        var s = sc[is] + ((sc[io] * 3) >> 2);
+        if (fb[is]) { if (isForbidden(side, p, 0)) continue; s += 400; }
+        if (defend && maxp[io] >= P_F4) s += 2000;
+        var j = n - 1;
+        while (j >= 0 && sb[j] < s) { mb[j + 1] = mb[j]; sb[j + 1] = sb[j]; j--; }
+        mb[j + 1] = p; sb[j + 1] = s; n++;
+      }
+    }
+    if (!defend && limit && n > limit) n = limit;
+    return n;
+  }
+  function quiesce(side, ply) {
+    var opp = 3 - side;
+    var fm = fourMoveCount(side);
+    if (fm >= 2 || cnt[side * 16 + T_43] + cnt[side * 16 + T_4P] > 0) {
+      var sv = vcfNodeLimit, sn = vcfNodes, sl = vcfLine;
+      vcfNodes = 0; vcfNodeLimit = 300; vcfLine = [];
+      var ok = vcf(side, 0, 6);
+      vcfNodeLimit = sv; vcfNodes = sn; vcfLine = sl;
+      if (ok) return WIN - ply - 9;
+    }
+    if (cnt[opp * 16 + T_F4] === 0) return evaluate(side);
+    // the opponent threatens an open four: try the defences one ply deep
+    var best = -INF; rg();
+    var x0 = RX0, x1 = RX1, y0 = RY0, y1 = RY1, sbase = side * S, obase = opp * S;
+    for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) {
+      var p = idx(x, y);
+      if (board[p] !== EMPTY) continue;
+      if (!(maxp[obase + p] >= P_B4 || maxp[sbase + p] >= P_B4)) continue;
+      if (!legal(side, p)) continue;
+      place(p, side);
+      var v;
+      if (cnt[side * 16 + T_FIVE] > 0) v = -evaluate(opp);
+      else if (cnt[opp * 16 + T_F4] > 0) v = -(WIN - ply - 4);
+      else v = -evaluate(opp);
+      remove();
+      if (v > best) best = v;
+    }
+    return best === -INF ? -(WIN - ply - 4) : best;
+  }
+  function negamax(side, depth, alpha, beta, ply) {
+    tick();
+    var opp = 3 - side;
+    if (cnt[side * 16 + T_FIVE] > 0) return WIN - ply;
+    if (cnt[opp * 16 + T_FIVE] > 0) {
+      var q = findFive(opp);
+      if (nFive >= 2) return -(WIN - ply - 1);
+      if (!legal(side, q)) return -(WIN - ply - 1);
+      place(q, side);
+      var vf = -negamax(opp, depth, -beta, -alpha, ply + 1);
+      remove();
+      return vf;
+    }
+    if (cnt[side * 16 + T_F4] > 0) return WIN - ply - 2;
+    if (depth <= 0 || ply >= 150) return quiesce(side, ply);
+
+    var hl = side === 2 ? hLo ^ SIDE_LO : hLo, hh = side === 2 ? hHi ^ SIDE_HI : hHi;
+    var ti = hl & TMASK, ttm = -1;
+    if (ttLo[ti] === hl && ttHi[ti] === hh) {
+      ttm = ttMove[ti];
+      if (ttDep[ti] >= depth) {
+        var tv = ttVal[ti];
+        if (tv > WIN_TH) tv -= ply; else if (tv < -WIN_TH) tv += ply;
+        var fl = ttFlag[ti];
+        if (fl === 1) return tv;
+        if (fl === 2 && tv >= beta) return tv;
+        if (fl === 3 && tv <= alpha) return tv;
+      }
+    }
+    var limit = ply < 2 ? 22 : (ply < 4 ? 14 : 9);
+    var n = gen(side, ply, limit);
+    if (n === 0) return 0;
+    var mb = MB[ply];
+    if (ttm > 0) {
+      for (var t = 1; t < n; t++) if (mb[t] === ttm) { for (var u = t; u > 0; u--) mb[u] = mb[u - 1]; mb[0] = ttm; break; }
+    }
+    var best = -INF, bestMove = -1, a0 = alpha, sbase = side * S;
+    for (var i = 0; i < n; i++) {
+      var m = mb[i];
+      var nd = depth - 1 + (maxp[sbase + m] >= P_B4 && ply < extLimit ? 1 : 0);
+      place(m, side);
+      var v;
+      if (i === 0) v = -negamax(opp, nd, -beta, -alpha, ply + 1);
+      else {
+        v = -negamax(opp, nd, -alpha - 1, -alpha, ply + 1);
+        if (v > alpha && v < beta) v = -negamax(opp, nd, -beta, -alpha, ply + 1);
+      }
+      remove();
+      if (v > best) {
+        best = v; bestMove = m;
+        if (v > alpha) { alpha = v; if (alpha >= beta) break; }
+      }
+    }
+    var sv = best;
+    if (sv > WIN_TH) sv += ply; else if (sv < -WIN_TH) sv -= ply;
+    ttLo[ti] = hl; ttHi[ti] = hh; ttVal[ti] = sv; ttDep[ti] = depth > 127 ? 127 : depth;
+    ttFlag[ti] = best <= a0 ? 3 : (best >= beta ? 2 : 1); ttMove[ti] = bestMove;
+    return best;
+  }
+  function pvFrom(side, first, maxLen) {
+    var line = [first], base = sp, s = side;
+    place(first, s); s = 3 - s;
+    for (var i = 1; i < maxLen; i++) {
+      if (cnt[(3 - s) * 16 + T_FIVE] > 0 && cnt[s * 16 + T_FIVE] === 0) {
+        // opponent of s threatens five: s must block
+      }
+      var hl = s === 2 ? hLo ^ SIDE_LO : hLo, hh = s === 2 ? hHi ^ SIDE_HI : hHi, ti = hl & TMASK;
+      if (!(ttLo[ti] === hl && ttHi[ti] === hh)) break;
+      var m = ttMove[ti];
+      if (m <= 0 || board[m] !== EMPTY) break;
+      line.push(m); place(m, s); s = 3 - s;
+    }
+    undoTo(base);
+    return line;
+  }
+
+  /* ---------- analysis entry point ---------- */
+  function xy(p) { return { x: px(p), y: py(p) }; }
+  function describe(side, p) {
+    var opp = 3 - side, tags = [];
+    var mine = cls[side * S + p], theirs = cls[opp * S + p], tm = maxp[opp * S + p];
+    if (mine === T_FIVE) tags.push('five');
+    else if (mine === T_F4) tags.push('open-four');
+    else if (mine === T_43) tags.push('four-three');
+    else if (mine === T_33) tags.push('double-three');
+    else if (mine === T_4P || mine === T_B4) tags.push('four');
+    else if (mine === T_3P || mine === T_F3) tags.push('three');
+    if (theirs === T_FIVE) tags.push('block-five');
+    else if (theirs === T_F4) tags.push('block-open-four');
+    else if (theirs === T_43 || theirs === T_33) tags.push('block-combo');
+    else if (tm >= P_B4) tags.push('block-three');
+    else if (theirs === T_3P || theirs === T_F3) tags.push('block-two');
+    return tags;
+  }
+  function analyze(req) {
+    var t0 = Date.now();
+    var n = req.size | 0, r = req.rule | 0, side = req.toMove === 2 ? 2 : 1, opp = 3 - side;
+    var timeMs = Math.max(120, req.timeMs || 1500);
+    if (n < 5 || n > 30) return { ok: false, error: 'size' };
+    configure(req.params);
+    setup(n, r);
+    var cells = req.cells, stones = 0, x, y, p, i;
+    for (y = 0; y < n; y++) for (x = 0; x < n; x++) {
+      var v = cells[y * n + x];
+      if (v === 1 || v === 2) { place(idx(x, y), v); stones++; }
+    }
+    var base = sp;
+    ttLo.fill(0); ttHi.fill(0); vLo.fill(0); vHi.fill(0); vRes.fill(0); cRes.fill(0);
+    nodes = 0; deadline = t0 + timeMs * 3 + 2000;
+    var res = { ok: true, side: side, size: n, rule: r, move: null, score: 0, kind: 'search', line: [], depth: 0,
+      nodes: 0, ms: 0, tags: [], threats: { oppFive: [], oppOpen: [], oppCombo: [], oppVCF: false, myVCF: false },
+      forbidden: [], alts: [], winner: 0, stones: stones };
+
+    // finished game? (a five on the board)
+    for (y = 0; y < n && !res.winner; y++) for (x = 0; x < n; x++) {
+      p = idx(x, y); var c = board[p];
+      if (c !== BLACK && c !== WHITE) continue;
+      var b = (c - 1) * 4 * S + p, found = false;
+      for (var d = 0; d < 4; d++) if (TAB_FREE[keys[b + d * S]] === P_F5) found = true;
+      if (found) { res.winner = c; break; }
+    }
+    if (res.winner) { res.kind = 'over'; res.ms = Date.now() - t0; return res; }
+
+    // forbidden points (renju black / no-33)
+    for (var col = 1; col <= 2; col++) {
+      if (!forbRule[col]) continue;
+      for (y = 0; y < n; y++) for (x = 0; x < n; x++) {
+        p = idx(x, y);
+        if (board[p] === EMPTY && fb[col * S + p] && isForbidden(col, p, 0)) res.forbidden.push({ x: x, y: y, c: col });
+      }
+    }
+    // threats of the opponent (for display)
+    listClass(opp, T_FIVE).forEach(function (q) { res.threats.oppFive.push(xy(q)); });
+    listClass(opp, T_F4).forEach(function (q) { res.threats.oppOpen.push(xy(q)); });
+    listClass(opp, T_43).concat(listClass(opp, T_33)).forEach(function (q) { res.threats.oppCombo.push(xy(q)); });
+
+    function finish(pm, kind, score) {
+      res.move = xy(pm); res.kind = kind; res.score = score;
+      res.tags = describe(side, pm);
+      res.nodes = nodes; res.ms = Date.now() - t0;
+      return res;
+    }
+    try {
+      if (stones === 0) {
+        var m = n >> 1; return finish(idx(m, m), 'first', 0);
+      }
+      var q = findFive(side);
+      if (q >= 0) return finish(q, 'five', WIN);
+      q = findFive(opp);
+      if (q >= 0) {
+        var lost = nFive >= 2 || !legal(side, q);
+        return finish(q, lost ? 'lost' : 'block-five', lost ? -WIN : 0);
+      }
+      var f4 = listClass(side, T_F4);
+      if (f4.length) { res.line = [xy(f4[0])]; return finish(f4[0], 'open-four', WIN - 3); }
+
+      // continuous-four win
+      deadline = t0 + timeMs * 0.3;
+      var gotVcf = false;
+      try { gotVcf = runVcf(side, 40, 200000); } catch (e) { if (e !== STOP) throw e; undoTo(base); }
+      if (gotVcf && vcfLine.length) {
+        res.threats.myVCF = true;
+        res.line = vcfLine.map(function (z, k) { var o = xy(z); o.c = k % 2 === 0 ? side : opp; return o; });
+        return finish(vcfLine[0], 'vcf', WIN - vcfLine.length);
+      }
+      // does the opponent threaten a continuous-four win?
+      deadline = Date.now() + timeMs * 0.1;
+      try { res.threats.oppVCF = runVcf(opp, 30, 50000); } catch (e2) { if (e2 !== STOP) throw e2; undoTo(base); }
+
+      // continuous-threat win
+      vctLine = []; vctNodes = 0; vctLimit = 150000;
+      deadline = Math.max(Date.now() + 50, t0 + timeMs * 0.4);
+      var gotVct = false;
+      if (!res.threats.oppVCF) {
+        for (var vd = 2; vd <= 12 && !gotVct; vd += 2) {
+          try { vctLine = []; gotVct = vctAttack(side, vd, 0); }
+          catch (e3) { if (e3 !== STOP && e3 !== VCT_STOP) throw e3; undoTo(base); break; }
+          if (Date.now() > t0 + timeMs * 0.35) break;
+        }
+      }
+      if (gotVct && vctLine.length && vctLine[0] > 0) {
+        var vl = [];
+        for (i = 0; i < vctLine.length && i < 24; i++) { if (!(vctLine[i] > 0)) break; var o = xy(vctLine[i]); o.c = i % 2 === 0 ? side : opp; vl.push(o); }
+        res.line = vl;
+        return finish(vctLine[0], 'vct', WIN - 100);
+      }
+
+      // alpha-beta, iterative deepening
+      deadline = t0 + timeMs;
+      var n0 = gen(side, 0, 0), rootMoves = [], rootScores = [];
+      for (i = 0; i < n0 && i < 36; i++) rootMoves.push(MB[0][i]);
+      if (!rootMoves.length) {
+        for (y = 0; y < n && !rootMoves.length; y++) for (x = 0; x < n; x++) { p = idx(x, y); if (legal(side, p)) { rootMoves.push(p); break; } }
+        if (!rootMoves.length) { res.kind = 'draw'; res.ms = Date.now() - t0; return res; }
+      }
+      for (i = 0; i < rootMoves.length; i++) rootScores.push(-INF);
+      var bestMove = rootMoves[0], bestScore = -INF, doneDepth = 0;
+      var maxD = req.maxDepth || 40, prevScore = null;
+      for (var depth = 2; depth <= maxD; depth++) {
+        extLimit = depth + 8;
+        var alpha = -INF, beta = INF, iterBest = -1, iterScore = -INF, completed = true;
+        var scores = rootScores.slice(0);
+        try {
+          for (i = 0; i < rootMoves.length; i++) {
+            var mv = rootMoves[i];
+            var nd = depth - 1 + (maxp[side * S + mv] >= P_B4 ? 1 : 0);
+            place(mv, side);
+            var val;
+            if (i === 0) val = -negamax(opp, nd, -beta, -alpha, 1);
+            else {
+              val = -negamax(opp, nd, -alpha - 1, -alpha, 1);
+              if (val > alpha) val = -negamax(opp, nd, -beta, -alpha, 1);
+            }
+            remove();
+            scores[i] = val;
+            if (val > iterScore) { iterScore = val; iterBest = i; }
+            if (val > alpha) alpha = val;
+          }
+        } catch (e4) {
+          if (e4 !== STOP) throw e4;
+          undoTo(base); completed = false;
+          if (iterBest >= 0 && iterScore > bestScore && doneDepth > 0) { bestMove = rootMoves[iterBest]; bestScore = iterScore; }
+        }
+        if (!completed) break;
+        doneDepth = depth;
+        prevScore = bestScore > -INF ? bestScore : null;
+        bestMove = rootMoves[iterBest]; bestScore = iterScore;
+        var order = rootMoves.map(function (mm, k) { return [mm, scores[k]]; });
+        order.sort(function (a, b2) { return b2[1] - a[1]; });
+        rootMoves = order.map(function (o2) { return o2[0]; });
+        rootScores = order.map(function (o2) { return o2[1]; });
+        if (bestScore >= WIN_TH || bestScore <= -WIN_TH) break;
+        if (Date.now() - t0 > timeMs * 0.5) break;
+      }
+      res.depth = doneDepth;
+      res.alts = [];
+      for (i = 0; i < rootMoves.length && res.alts.length < 3; i++) {
+        if (rootMoves[i] === bestMove) continue;
+        var a = xy(rootMoves[i]); a.score = rootScores[i]; res.alts.push(a);
+      }
+      try {
+        res.line = pvFrom(side, bestMove, 8).map(function (z, k) { var o3 = xy(z); o3.c = k % 2 === 0 ? side : opp; return o3; });
+      } catch (e5) { undoTo(base); res.line = [xy(bestMove)]; }
+      var kind = bestScore >= WIN_TH ? 'win' : (bestScore <= -WIN_TH ? 'losing' : 'search');
+      // odd and even depths lean opposite ways; the mean of the last two is steadier for display
+      var shown = bestScore;
+      if (kind === 'search' && prevScore !== null && Math.abs(prevScore) < WIN_TH) shown = Math.round((bestScore + prevScore) / 2);
+      res.rawScore = bestScore;
+      return finish(bestMove, kind, shown);
+    } finally {
+      undoTo(base);
+    }
+  }
+
+  /* ---------- small public helpers ---------- */
+  function forbiddenAt(req) {
+    setup(req.size, req.rule | 0);
+    var n = req.size, out = [], x, y;
+    for (y = 0; y < n; y++) for (x = 0; x < n; x++) { var v = req.cells[y * n + x]; if (v === 1 || v === 2) place(idx(x, y), v); }
+    var c = req.color === 2 ? 2 : 1;
+    for (y = 0; y < n; y++) for (x = 0; x < n; x++) { var p = idx(x, y); if (board[p] === EMPTY && fb[c * S + p] && isForbidden(c, p, 0)) out.push({ x: x, y: y }); }
+    return out;
+  }
+
+  return {
+    analyze: analyze,
+    forbiddenAt: forbiddenAt,
+    _debug: {
+      pat: function (exact, line) {
+        var key = 0;
+        for (var i = 0; i < 11; i++) { if (i === 5) continue; var ch = line[i], dg = ch === 'x' ? 1 : (ch === '.' ? 0 : 2); key += dg * POW3[i < 5 ? i : i - 1]; }
+        return (exact ? TAB_EXACT : TAB_FREE)[key];
+      },
+      vcfTest: function (req, side, depth) {
+        setup(req.size, req.rule | 0);
+        var n = req.size;
+        for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) { var v = req.cells[y * n + x]; if (v === 1 || v === 2) place(idx(x, y), v); }
+        var base = sp;
+        vLo.fill(0); vHi.fill(0); vRes.fill(0);
+        nodes = 0; deadline = Date.now() + 60000;
+        var r = runVcf(side, depth, 1e9);
+        undoTo(base);
+        return { win: r, line: vcfLine.map(function (z) { return xy(z); }) };
+      }
+    }
+  };
+}
+
+</script>
+<script>
+/* =====================================================================
+ * Omok vision: find a board grid in a screenshot and read the stones.
+ * Works on ImageData-like objects {data (RGBA), width, height}.
+ * ===================================================================== */
+function OmokVision() {
+  'use strict';
+
+  /* ---------- grayscale (optionally box-downscaled) ---------- */
+  function makeGray(img, roi, f) {
+    var W = img.width, d = img.data;
+    var x0 = roi ? roi.x : 0, y0 = roi ? roi.y : 0;
+    var rw = roi ? roi.w : W, rh = roi ? roi.h : img.height;
+    var w = Math.floor(rw / f), h = Math.floor(rh / f);
+    var L = new Uint8Array(w * h), x, y, si;
+    if (f === 1) {
+      for (y = 0; y < h; y++) {
+        si = ((y0 + y) * W + x0) * 4;
+        var di = y * w;
+        for (x = 0; x < w; x++, si += 4) L[di + x] = (d[si] * 77 + d[si + 1] * 150 + d[si + 2] * 29) >> 8;
+      }
+    } else {
+      var ff = f * f;
+      for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+        var sum = 0;
+        for (var j = 0; j < f; j++) {
+          si = ((y0 + y * f + j) * W + x0 + x * f) * 4;
+          for (var i = 0; i < f; i++, si += 4) sum += (d[si] * 77 + d[si + 1] * 150 + d[si + 2] * 29) >> 8;
+        }
+        L[y * w + x] = (sum / ff) | 0;
+      }
+    }
+    return { L: L, w: w, h: h, f: f, ox: x0, oy: y0 };
+  }
+
+  /* ---------- thin-line evidence profiles ---------- */
+  // A pixel is on a thin dark (light) horizontal line when the pixels 2 or 3 rows
+  // above AND below are brighter (darker) by T. Only runs of >= R such pixels count.
+  function lineProfiles(G, T, R) {
+    var L = G.L, w = G.w, h = G.h;
+    var PHd = new Float32Array(h), PHl = new Float32Array(h), PVd = new Float32Array(w), PVl = new Float32Array(w);
+    var crD = new Int32Array(w), crL = new Int32Array(w);
+    for (var y = 3; y < h - 3; y++) {
+      var row = y * w, runD = 0, runL = 0;
+      for (var x = 3; x < w - 3; x++) {
+        var i = row + x, c = L[i];
+        var a2 = L[i - 2 * w], b2 = L[i + 2 * w], a3 = L[i - 3 * w], b3 = L[i + 3 * w];
+        var m2 = a2 < b2 ? a2 : b2, m3 = a3 < b3 ? a3 : b3, mn = m2 > m3 ? m2 : m3;
+        var M2 = a2 > b2 ? a2 : b2, M3 = a3 > b3 ? a3 : b3, mx = M2 < M3 ? M2 : M3;
+        if (mn - c >= T) runD++; else { if (runD >= R) PHd[y] += runD; runD = 0; }
+        if (c - mx >= T) runL++; else { if (runL >= R) PHl[y] += runL; runL = 0; }
+        var l2 = L[i - 2], r2 = L[i + 2], l3 = L[i - 3], r3 = L[i + 3];
+        var vm2 = l2 < r2 ? l2 : r2, vm3 = l3 < r3 ? l3 : r3, vmn = vm2 > vm3 ? vm2 : vm3;
+        var vM2 = l2 > r2 ? l2 : r2, vM3 = l3 > r3 ? l3 : r3, vmx = vM2 < vM3 ? vM2 : vM3;
+        if (vmn - c >= T) crD[x]++; else { if (crD[x] >= R) PVd[x] += crD[x]; crD[x] = 0; }
+        if (c - vmx >= T) crL[x]++; else { if (crL[x] >= R) PVl[x] += crL[x]; crL[x] = 0; }
+      }
+      if (runD >= R) PHd[y] += runD;
+      if (runL >= R) PHl[y] += runL;
+    }
+    for (var xx = 0; xx < w; xx++) { if (crD[xx] >= R) PVd[xx] += crD[xx]; if (crL[xx] >= R) PVl[xx] += crL[xx]; }
+    return { PHd: PHd, PHl: PHl, PVd: PVd, PVl: PVl };
+  }
+
+  /* ---------- peaks & periodic chains ---------- */
+  function findPeaks(P, minAbs, rel) {
+    var n = P.length, Q = new Float32Array(n), maxv = 0, i;
+    for (i = 1; i < n - 1; i++) { Q[i] = (P[i - 1] + 2 * P[i] + P[i + 1]) / 4; if (Q[i] > maxv) maxv = Q[i]; }
+    var thr = Math.max(minAbs, maxv * rel), out = [];
+    for (i = 2; i < n - 2; i++) {
+      var v = Q[i];
+      if (v < thr) continue;
+      if (!(v > Q[i - 1] && v >= Q[i + 1] && v >= Q[i - 2] && v >= Q[i + 2])) continue;
+      var sw = 0, sx = 0;
+      for (var k = -2; k <= 2; k++) { sw += P[i + k]; sx += P[i + k] * (i + k); }
+      out.push({ pos: sw > 0 ? sx / sw : i, val: v });
+    }
+    return out;
+  }
+  function fitLine(ks, ps) {
+    var n = ks.length, sk = 0, sp = 0, skk = 0, skp = 0;
+    for (var i = 0; i < n; i++) { sk += ks[i]; sp += ps[i]; skk += ks[i] * ks[i]; skp += ks[i] * ps[i]; }
+    var den = n * skk - sk * sk;
+    var s = den ? (n * skp - sk * sp) / den : 0, a = (sp - s * sk) / n;
+    return { a: a, s: s };
+  }
+  function findChains(pk, minS, maxS) {
+    var P = pk.map(function (p) { return p.pos; }), V = pk.map(function (p) { return p.val; });
+    var m = P.length, seen = {}, out = [];
+    function near(target, tol) {
+      var best = -1, bd = tol;
+      for (var q = 0; q < m; q++) { var dd = Math.abs(P[q] - target); if (dd <= bd) { bd = dd; best = q; } }
+      return best;
+    }
+    for (var i = 0; i < m; i++) {
+      for (var j = i + 1; j < m; j++) {
+        var g = P[j] - P[i];
+        if (g < minS) continue;
+        if (g > maxS) break;
+        var ks = [0, 1], ps = [P[i], P[j]], vals = [V[i], V[j]];
+        var fit = { a: P[i], s: g }, k = 1, miss = 0;
+        while (ks.length < 40) {
+          var tol = Math.max(1.6, fit.s * 0.07), f = near(fit.a + (k + 1) * fit.s, tol);
+          k++;
+          if (f < 0) { if (++miss > 1) break; continue; }
+          miss = 0; ks.push(k); ps.push(P[f]); vals.push(V[f]); fit = fitLine(ks, ps);
+        }
+        var kb = 0; miss = 0;
+        while (ks.length < 40) {
+          var tl = Math.max(1.6, fit.s * 0.07), fb = near(fit.a + (kb - 1) * fit.s, tl);
+          kb--;
+          if (fb < 0) { if (++miss > 1) break; continue; }
+          miss = 0; ks.push(kb); ps.push(P[fb]); vals.push(V[fb]); fit = fitLine(ks, ps);
+        }
+        var kmin = Math.min.apply(null, ks), kmax = Math.max.apply(null, ks);
+        var present = ks.length, span = kmax - kmin + 1;
+        if (present < 5 || present < span * 0.8) continue;
+        var key = Math.round(fit.a + kmin * fit.s) + ':' + Math.round(fit.s * 2) + ':' + span;
+        if (seen[key]) continue;
+        seen[key] = 1;
+        var sv = vals.slice(0).sort(function (a, b) { return a - b; });
+        out.push({ start: fit.a + kmin * fit.s, s: fit.s, count: span, present: present, med: sv[sv.length >> 1],
+          score: present * Math.sqrt(sv[sv.length >> 1]) });
+      }
+    }
+    out.sort(function (a, b) { return b.score - a.score; });
+    return out.slice(0, 10);
+  }
+
+  /* ---------- coverage of a candidate line (one-sided near image borders) ---------- */
+  function lineHit(L, i, c, s1, s2, t1, t2, dark, T, oneA, oneB) {
+    // s1,s2: neighbours on side A (distance 2,3); t1,t2: side B
+    if (dark) {
+      if (oneA) return Math.max(L[i + t1], L[i + t2]) - c >= T + 6;
+      if (oneB) return Math.max(L[i + s1], L[i + s2]) - c >= T + 6;
+      var m2 = Math.min(L[i + s1], L[i + t1]), m3 = Math.min(L[i + s2], L[i + t2]);
+      return Math.max(m2, m3) - c >= T;
+    }
+    if (oneA) return c - Math.min(L[i + t1], L[i + t2]) >= T + 6;
+    if (oneB) return c - Math.min(L[i + s1], L[i + s2]) >= T + 6;
+    var M2 = Math.max(L[i + s1], L[i + t1]), M3 = Math.max(L[i + s2], L[i + t2]);
+    return c - Math.min(M2, M3) >= T;
+  }
+  function evH(G, x, y, dark, T) {
+    if (y < 0 || y >= G.h || x < 0 || x >= G.w) return false;
+    var w = G.w, i = y * w + x;
+    var oneA = y < 3, oneB = y > G.h - 4;
+    if (oneA && oneB) return false;
+    return lineHit(G.L, i, G.L[i], -2 * w, -3 * w, 2 * w, 3 * w, dark, T, oneA, oneB);
+  }
+  function evV(G, x, y, dark, T) {
+    if (y < 0 || y >= G.h || x < 0 || x >= G.w) return false;
+    var i = y * G.w + x;
+    var oneA = x < 3, oneB = x > G.w - 4;
+    if (oneA && oneB) return false;
+    return lineHit(G.L, i, G.L[i], -2, -3, 2, 3, dark, T, oneA, oneB);
+  }
+  function rowCov(G, yf, x0, x1, dark, T) {
+    var y = Math.round(yf); if (y < 0 || y >= G.h) return 0;
+    x0 = Math.max(0, Math.round(x0)); x1 = Math.min(G.w - 1, Math.round(x1));
+    if (x1 <= x0) return 0;
+    var hit = 0, tot = 0, step = x1 - x0 > 600 ? 2 : 1;
+    for (var x = x0; x <= x1; x += step) {
+      tot++;
+      if (evH(G, x, y, dark, T) || evH(G, x, y - 1, dark, T) || evH(G, x, y + 1, dark, T)) hit++;
+    }
+    return hit / tot;
+  }
+  function colCov(G, xf, y0, y1, dark, T) {
+    var x = Math.round(xf); if (x < 0 || x >= G.w) return 0;
+    y0 = Math.max(0, Math.round(y0)); y1 = Math.min(G.h - 1, Math.round(y1));
+    if (y1 <= y0) return 0;
+    var hit = 0, tot = 0, step = y1 - y0 > 600 ? 2 : 1;
+    for (var y = y0; y <= y1; y += step) {
+      tot++;
+      if (evV(G, x, y, dark, T) || evV(G, x - 1, y, dark, T) || evV(G, x + 1, y, dark, T)) hit++;
+    }
+    return hit / tot;
+  }
+
+  /* ---------- board detection ---------- */
+  function detect(img, opts) {
+    opts = opts || {};
+    var roi = opts.roi || null;
+    var px = roi ? roi.w * roi.h : img.width * img.height;
+    var f0 = px > 9e6 ? 3 : (px > 3.2e6 ? 2 : 1);
+    var scales = [f0, f0 * 2, f0 * 3], best = null, cands = [];
+    for (var si = 0; si < scales.length; si++) {
+      var f = scales[si];
+      var G = makeGray(img, roi, f);
+      if (G.w < 60 || G.h < 60) continue;
+      var T = 14, R = 6;
+      var pr = lineProfiles(G, T, R);
+      for (var pol = 0; pol < 2; pol++) {
+        var dark = pol === 0;
+        var PH = dark ? pr.PHd : pr.PHl, PV = dark ? pr.PVd : pr.PVl;
+        var rows = findChains(findPeaks(PH, 20, 0.04), 6, Math.min(G.w, G.h) / 4);
+        var cols = findChains(findPeaks(PV, 20, 0.04), 6, Math.min(G.w, G.h) / 4);
+        for (var a = 0; a < rows.length; a++) for (var b = 0; b < cols.length; b++) {
+          var r = rows[a], c = cols[b], ratio = r.s / c.s;
+          if (ratio < 0.8 || ratio > 1.25) continue;
+          var cand = refine(G, r, c, dark, T);
+          if (!cand) continue;
+          cand.f = f; cand.G = G;
+          cand.score *= Math.sqrt(f);           // spacing term in full-resolution pixels
+          if (opts.debug) cands.push({ f: f, dark: dark, lines: cand.lines, s: cand.sx * f, cov: cand.cov, mid: cand.mid, score: cand.score });
+          if (!best || cand.score > best.score) best = cand;
+        }
+      }
+      // a clean, fine-scale result needs no coarser pass
+      if (best && best.f === f && best.cov > 0.6 && best.mid < 0.15 && f === f0 && !opts.allScales) break;
+    }
+    if (!best) return { ok: false, reason: 'nogrid', cands: cands };
+    var fb = best.f, Gb = best.G;
+    var grid = { ok: true, lines: best.lines,
+      x0: Gb.ox + (best.x0 + 0.5) * fb - 0.5, y0: Gb.oy + (best.y0 + 0.5) * fb - 0.5,
+      sx: best.sx * fb, sy: best.sy * fb, dark: best.dark, score: best.score, cov: best.cov, mode: 'point', n: best.lines, f: fb };
+    if (opts.debug) grid.cands = cands;
+    var mode = opts.mode || 'auto';
+    if (mode === 'auto') {
+      var pRead = read(img, setMode(grid, 'point')), cRead = read(img, setMode(grid, 'cell'));
+      var pS = pRead.sure, cS = cRead.sure;
+      if (pRead.strong >= 3 && pS >= cS * 0.5) mode = 'point';
+      else if (cS > pS * 1.2 + 1) mode = 'cell';
+      else if (pS > cS) mode = 'point';
+      else mode = (grid.lines === 16 || grid.lines === 20 || grid.lines === 11) ? 'cell' : 'point';
+      grid.modeAuto = true;
+    }
+    return setMode(grid, mode);
+  }
+  function setMode(grid, mode) {
+    var g = {};
+    for (var k in grid) g[k] = grid[k];
+    g.mode = mode;
+    g.n = mode === 'cell' ? grid.lines - 1 : grid.lines;
+    var half = mode === 'cell' ? 0 : 0.5;
+    g.rect = { x: grid.x0 - grid.sx * half, y: grid.y0 - grid.sy * half,
+      w: grid.sx * (grid.lines - 1 + 2 * half), h: grid.sy * (grid.lines - 1 + 2 * half) };
+    return g;
+  }
+  // Grid from a user-drawn box whose corners are the outermost stone positions.
+  function fromBox(box, n, mode) {
+    var sx = (box.x1 - box.x0) / (n - 1), sy = (box.y1 - box.y0) / (n - 1);
+    var lines = mode === 'cell' ? n + 1 : n;
+    var x0 = mode === 'cell' ? box.x0 - sx / 2 : box.x0, y0 = mode === 'cell' ? box.y0 - sy / 2 : box.y0;
+    return setMode({ ok: true, lines: lines, x0: x0, y0: y0, sx: sx, sy: sy, dark: true, score: 0, cov: 0, manual: true }, mode);
+  }
+
+  function covOf(G, ax, other, horiz, k, dark, T) {
+    var pos = ax.start + k * ax.s, a = other.start, b = other.start + (other.count - 1) * other.s;
+    return horiz ? rowCov(G, pos, a, b, dark, T) : colCov(G, pos, a, b, dark, T);
+  }
+  function refine(G, r, c, dark, T) {
+    var rows = { start: r.start, s: r.s, count: r.count }, cols = { start: c.start, s: c.s, count: c.count };
+    for (var iter = 0; iter < 4; iter++) {
+      var changed = false;
+      changed = adjustAxis(G, rows, cols, true, dark, T) || changed;
+      changed = adjustAxis(G, cols, rows, false, dark, T) || changed;
+      if (!changed) break;
+    }
+    if (rows.count < 5 || cols.count < 5) return null;
+    while (rows.count > cols.count && rows.count - cols.count <= 3) trimWeak(G, rows, cols, true, dark, T);
+    while (cols.count > rows.count && cols.count - rows.count <= 3) trimWeak(G, cols, rows, false, dark, T);
+    if (rows.count !== cols.count) return null;
+    var n = rows.count, k;
+    if (n < 5 || n > 27) return null;
+    var cr = 0, cc = 0, mr = 0, mc = 0;
+    for (k = 0; k < n; k++) { cr += covOf(G, rows, cols, true, k, dark, T); cc += covOf(G, cols, rows, false, k, dark, T); }
+    for (k = 0; k < n - 1; k++) { mr += covOf(G, rows, cols, true, k + 0.5, dark, T); mc += covOf(G, cols, rows, false, k + 0.5, dark, T); }
+    cr /= n; cc /= n; mr /= (n - 1); mc /= (n - 1);
+    if (cr < 0.3 || cc < 0.3) return null;
+    var cov = (cr + cc) / 2, mid = (mr + mc) / 2;
+    // half-way lines that look like grid lines mean this is only every other line
+    if (mid > cov * 0.5) return null;
+    var squareness = Math.min(rows.s, cols.s) / Math.max(rows.s, cols.s);
+    var score = n * Math.sqrt(rows.s) * cov * squareness * (1 - mid / cov);
+    return { lines: n, x0: cols.start, y0: rows.start, sx: cols.s, sy: rows.s, dark: dark, score: score, cov: cov, mid: mid };
+  }
+  // How well the perpendicular lines continue between two positions of this axis.
+  // Grid lines cross the whole board; a decorative frame line has nothing crossing
+  // the gap between it and the outermost grid line.
+  function bandCov(G, ax, other, horiz, kFrom, kTo, dark, T) {
+    var p0 = ax.start + kFrom * ax.s, p1 = ax.start + kTo * ax.s, lo = Math.min(p0, p1) + 2, hi = Math.max(p0, p1) - 2;
+    if (hi <= lo) return 0;
+    var tot = 0, m = 0, stepK = Math.max(1, Math.floor(other.count / 7));
+    for (var k = 0; k < other.count; k += stepK) {
+      var pos = other.start + k * other.s;
+      tot += horiz ? colCov(G, pos, lo, hi, dark, T) : rowCov(G, pos, lo, hi, dark, T);
+      m++;
+    }
+    return m ? tot / m : 0;
+  }
+  function adjustAxis(G, ax, other, horiz, dark, T) {
+    var changed = false, k, base = 0;
+    for (k = 0; k < ax.count; k++) base += covOf(G, ax, other, horiz, k, dark, T);
+    base /= ax.count;
+    var bands = [];
+    for (k = 1; k < ax.count; k++) bands.push(bandCov(G, ax, other, horiz, k - 1, k, dark, T));
+    bands.sort(function (a, b) { return a - b; });
+    var bandMed = bands.length ? bands[bands.length >> 1] : 0.5;
+    var need = Math.max(0.3, base * 0.55), bandNeed = Math.max(0.2, bandMed * 0.6), bandKeep = Math.max(0.15, bandMed * 0.5);
+    while (ax.count < 30 && covOf(G, ax, other, horiz, ax.count, dark, T) >= need &&
+           bandCov(G, ax, other, horiz, ax.count - 1, ax.count, dark, T) >= bandNeed) { ax.count++; changed = true; }
+    while (ax.count < 30 && covOf(G, ax, other, horiz, -1, dark, T) >= need &&
+           bandCov(G, ax, other, horiz, -1, 0, dark, T) >= bandNeed) { ax.start -= ax.s; ax.count++; changed = true; }
+    while (ax.count > 5 && (covOf(G, ax, other, horiz, ax.count - 1, dark, T) < need * 0.6 ||
+           bandCov(G, ax, other, horiz, ax.count - 2, ax.count - 1, dark, T) < bandKeep)) { ax.count--; changed = true; }
+    while (ax.count > 5 && (covOf(G, ax, other, horiz, 0, dark, T) < need * 0.6 ||
+           bandCov(G, ax, other, horiz, 0, 1, dark, T) < bandKeep)) { ax.start += ax.s; ax.count--; changed = true; }
+    return changed;
+  }
+  function trimWeak(G, ax, other, horiz, dark, T) {
+    var first = covOf(G, ax, other, horiz, 0, dark, T), last = covOf(G, ax, other, horiz, ax.count - 1, dark, T);
+    if (first < last) ax.start += ax.s;
+    ax.count--;
+  }
+
+  /* ---------- reading stones ---------- */
+  function siteXY(grid, i, j) {
+    var o = grid.mode === 'cell' ? 0.5 : 0;
+    return [grid.x0 + (i + o) * grid.sx, grid.y0 + (j + o) * grid.sy];
+  }
+  function median(arr) { if (!arr.length) return 0; var a = arr.slice(0).sort(function (x, y) { return x - y; }); return a[a.length >> 1]; }
+  function bgStats(img, grid) {
+    var d = img.data, W = img.width, H = img.height, s = Math.min(grid.sx, grid.sy);
+    var R = [], Gc = [], B = [], pix = [], i, j;
+    var cellMode = grid.mode === 'cell';
+    var rr = Math.max(1, Math.round(s * (cellMode ? 0.06 : 0.1)));
+    var off = cellMode ? 0.17 : 0.5;
+    for (j = 0; j < grid.lines - 1; j++) for (i = 0; i < grid.lines - 1; i++) {
+      var cx = Math.round(grid.x0 + (i + off) * grid.sx), cy = Math.round(grid.y0 + (j + off) * grid.sy);
+      var pr = [], pg = [], pb = [];
+      for (var y = cy - rr; y <= cy + rr; y++) for (var x = cx - rr; x <= cx + rr; x++) {
+        if (x < 0 || y < 0 || x >= W || y >= H) continue;
+        var k = (y * W + x) * 4; pr.push(d[k]); pg.push(d[k + 1]); pb.push(d[k + 2]);
+        if (((x + y) & 1) === 0) pix.push(k);
+      }
+      if (pr.length) { R.push(median(pr)); Gc.push(median(pg)); B.push(median(pb)); }
+    }
+    var bg = [median(R), median(Gc), median(B)];
+    var dist = pix.map(function (k) { return Math.abs(d[k] - bg[0]) + Math.abs(d[k + 1] - bg[1]) + Math.abs(d[k + 2] - bg[2]); });
+    dist.sort(function (a, b) { return a - b; });
+    var p90 = dist.length ? dist[Math.floor(dist.length * 0.9)] : 0;
+    var tc = Math.max(45, Math.min(170, p90 * 1.4 + 15));
+    return { bg: bg, tc: tc, p90: p90 };
+  }
+  function read(img, grid, opts) {
+    opts = opts || {};
+    var d = img.data, W = img.width, H = img.height, n = grid.n;
+    var s = Math.min(grid.sx, grid.sy), point = grid.mode === 'point';
+    var st = opts.bgStats || bgStats(img, grid), bg = st.bg, Tc = st.tc;
+    var bgL = (bg[0] * 77 + bg[1] * 150 + bg[2] * 29) >> 8;
+    var r0 = point ? 0.12 * s : 0, rMid = point ? 0.27 * s : 0.26 * s, r1 = point ? 0.38 * s : 0.4 * s, rE = 0.48 * s;
+    var bw = Math.max(1.2, 0.05 * s);
+    var r1s = r1 * r1, r0s = r0 * r0, rMs = rMid * rMid, rEs = rE * rE;
+    var feats = new Array(n * n), armsIn = [], i, j;
+    var hIn = new Int32Array(64), hAll = new Int32Array(64), hIn2 = new Int32Array(64), hInk = new Int32Array(64), hOut = new Int32Array(64);
+    var binT = new Int32Array(6), binI = new Int32Array(6), dgw = Math.max(1.5, 0.06 * s);
+    for (j = 0; j < n; j++) for (i = 0; i < n; i++) {
+      var c = siteXY(grid, i, j), cx = c[0], cy = c[1];
+      var xa = Math.max(0, Math.floor(cx - rE)), xb = Math.min(W - 1, Math.ceil(cx + rE));
+      var ya = Math.max(0, Math.floor(cy - rE)), yb = Math.min(H - 1, Math.ceil(cy + rE));
+      var eT = [0, 0, 0, 0], eI = [0, 0, 0, 0];
+      var inkIn = 0, totIn = 0, inkOut = 0, totOut = 0;
+      var oSi = 0, oNi = 0, aSa = 0, aNa = 0, oSa = 0, oNa = 0;
+      var dS = [0, 0, 0, 0], dN = [0, 0, 0, 0];
+      var qi = [0, 0, 0, 0], qti = [0, 0, 0, 0], qo = [0, 0, 0, 0], qto = [0, 0, 0, 0];
+      var nIn = 0, nAll = 0, nOut = 0, dgT = 0, dgI = 0, ofT = 0, ofI = 0, nInk = 0;
+      hInk.fill(0); hOut.fill(0);
+      binT.fill(0); binI.fill(0);
+      hIn.fill(0); hAll.fill(0);
+      for (var y = ya; y <= yb; y++) {
+        var dy = y - cy, dy2 = dy * dy, row = y * W;
+        for (var x = xa; x <= xb; x++) {
+          var dx = x - cx, rr = dx * dx + dy2;
+          if (rr > r1s) {
+            // the band where a stone's outline would be
+            if (rr > rEs || (point && (Math.abs(dx) <= bw || Math.abs(dy) <= bw))) continue;
+            var ke = (row + x) * 4, eq = (dx >= 0 ? 1 : 0) + (dy >= 0 ? 2 : 0);
+            eT[eq]++;
+            if ((Math.abs(d[ke] - bg[0]) + Math.abs(d[ke + 1] - bg[1]) + Math.abs(d[ke + 2] - bg[2])) > Tc) eI[eq]++;
+            continue;
+          }
+          if (rr < r0s) continue;
+          var k = (row + x) * 4, R = d[k], Gg = d[k + 1], B = d[k + 2];
+          var Lp = (R * 77 + Gg * 150 + B * 29) >> 8;
+          var inner = rr < rMs;
+          hAll[Lp >> 2]++; nAll++;
+          if (inner) { hIn[Lp >> 2]++; nIn++; } else { hOut[Lp >> 2]++; nOut++; }
+          if (point && (Math.abs(dx) <= bw || Math.abs(dy) <= bw)) {
+            if (inner) {
+              var ad = Math.abs(dx) <= bw ? (dy < 0 ? 0 : 1) : (dx < 0 ? 2 : 3);   // up, down, left, right
+              dS[ad] += Lp; dN[ad]++;
+            }
+            aSa += Lp; aNa++;
+            continue;
+          }
+          if (inner) { oSi += Lp; oNi++; } oSa += Lp; oNa++;
+          var ink = (Math.abs(R - bg[0]) + Math.abs(Gg - bg[1]) + Math.abs(B - bg[2])) > Tc;
+          if (ink) { hInk[Lp >> 2]++; nInk++; }
+          var qd = (dx >= 0 ? 1 : 0) + (dy >= 0 ? 2 : 0);
+          if (inner) { totIn++; qti[qd]++; if (ink) { inkIn++; qi[qd]++; } }
+          else { totOut++; qto[qd]++; if (ink) { inkOut++; qo[qd]++; } }
+          if (!point) {
+            var rb = Math.min(5, Math.floor(Math.sqrt(rr) / r1 * 6));
+            binT[rb]++; if (ink) binI[rb]++;
+            if (Math.abs(Math.abs(dx) - Math.abs(dy)) <= dgw) { dgT++; if (ink) dgI++; } else { ofT++; if (ink) ofI++; }
+          }
+        }
+      }
+      var armIn = 0, armAll = 0;
+      if (point) {
+        var offI = oNi ? oSi / oNi : bgL, armI = 0, nv = 0;
+        // only the arms that run along real grid lines (edge points have 3, corners 2)
+        var valid = [j > 0, j < n - 1, i > 0, i < n - 1];
+        for (var ai = 0; ai < 4; ai++) if (valid[ai] && dN[ai]) { armI += dS[ai] / dN[ai]; nv++; }
+        armI = nv ? armI / nv : offI;
+        var offA = oNa ? oSa / oNa : bgL, armA = aNa ? aSa / aNa : offA;
+        armIn = grid.dark ? offI - armI : armI - offI;
+        armAll = grid.dark ? offA - armA : armA - offA;
+        armsIn.push(armIn);
+      }
+      // board colour just outside a stone, on the diagonals (clear of lines and neighbours)
+      var dg = (point ? 0.42 : 0.4) * s, pr2 = Math.max(1, Math.round((point ? 0.07 : 0.04) * s)), nd = 0;
+      hIn2.fill(0);
+      for (var dq = 0; dq < 4; dq++) {
+        var px0 = Math.round(cx + (dq & 1 ? dg : -dg)), py0 = Math.round(cy + (dq & 2 ? dg : -dg));
+        for (var yy = py0 - pr2; yy <= py0 + pr2; yy++) {
+          if (yy < 0 || yy >= H) continue;
+          for (var xx = px0 - pr2; xx <= px0 + pr2; xx++) {
+            if (xx < 0 || xx >= W) continue;
+            var kk = (yy * W + xx) * 4;
+            hIn2[((d[kk] * 77 + d[kk + 1] * 150 + d[kk + 2] * 29) >> 8) >> 2]++; nd++;
+          }
+        }
+      }
+      var ringMax = 0;
+      for (var bb = 2; bb < 6; bb++) if (binT[bb]) ringMax = Math.max(ringMax, binI[bb] / binT[bb]);
+      var edgeMin = 1, edgeAll = 0, edgeTot = 0;
+      for (var eq2 = 0; eq2 < 4; eq2++) { edgeMin = Math.min(edgeMin, eT[eq2] ? eI[eq2] / eT[eq2] : 0); edgeAll += eI[eq2]; edgeTot += eT[eq2]; }
+      var f = {
+        edgeRing: edgeTot ? edgeAll / edgeTot : 0, edgeMin: edgeMin,
+        xDiag: dgT ? dgI / dgT : 0, xOff: ofT ? ofI / ofT : 0, ringMax: ringMax,
+        ctr: (binT[0] + binT[1]) ? (binI[0] + binI[1]) / (binT[0] + binT[1]) : 0,
+        medDiag: histMed(hIn2, nd, bgL),
+        inkIn: totIn ? inkIn / totIn : 0, inkOut: totOut ? inkOut / totOut : 0,
+        ink: (totIn + totOut) ? (inkIn + inkOut) / (totIn + totOut) : 0,
+        qin: Math.min(qti[0] ? qi[0] / qti[0] : 0, qti[1] ? qi[1] / qti[1] : 0, qti[2] ? qi[2] / qti[2] : 0, qti[3] ? qi[3] / qti[3] : 0),
+        qout: Math.min(qto[0] ? qo[0] / qto[0] : 0, qto[1] ? qo[1] / qto[1] : 0, qto[2] ? qo[2] / qto[2] : 0, qto[3] ? qo[3] / qto[3] : 0),
+        medIn: histMed(hIn, nIn, bgL), medAll: histMed(hAll, nAll, bgL), arm: armIn, armAll: armAll,
+        inkMed: histMed(hInk, nInk, bgL), medOut: histMed(hOut, nOut, bgL)
+      };
+      feats[j * n + i] = f;
+    }
+    var typArm = 0;
+    if (armsIn.length) { var sa = armsIn.slice(0).sort(function (a, b) { return a - b; }); typArm = sa[Math.floor(sa.length * 0.75)]; }
+    var linesOk = typArm >= 10;
+    var cells = new Int8Array(n * n), conf = new Float32Array(n * n);
+    var solid = 0, black = 0, white = 0, unsure = 0, sure = 0, strongN = 0, marks = 0;
+    for (var q = 0; q < n * n; q++) {
+      var F = feats[q], v = 0, cf = 1;
+      if (point) {
+        var differs = Math.abs(F.medIn - bgL) >= 30;
+        var edgeR = Math.abs(F.medIn - F.medDiag) / Math.max(20, Math.abs(F.medIn - bgL));
+        var edgeOK = !differs || edgeR >= 0.45, edgeClean = differs && edgeR >= 0.75;
+        if (linesOk) {
+          var strong = F.arm < 0.12 * typArm, hidden = F.arm < 0.35 * typArm, partly = F.arm < 0.6 * typArm;
+          if (strong && (edgeOK || F.arm < 0.05 * typArm)) {
+            v = stoneColor(F, bgL);
+            if (F.inkIn >= 0.4 || differs) { cf = 1; solid++; } else cf = 0.65;
+          } else if (hidden && edgeClean && F.inkIn >= 0.75) { v = stoneColor(F, bgL); cf = 0.9; solid++; }
+          else if (F.arm < 0.3 * typArm && Math.abs(F.medOut - bgL) < 25 && Math.abs(F.medIn - bgL) < 40 && F.inkIn < 0.4) {
+            v = bgL >= 128 ? 2 : 1; cf = 0.7;          // a stone the colour of the board (white on white), lines mostly hidden
+          }
+          else if (partly && edgeClean && F.inkIn >= 0.9) { v = stoneColor(F, bgL); cf = 0.5; }
+          else { v = 0; cf = (hidden || partly || F.inkIn > 0.3) ? 0.55 : 1; }
+        } else {
+          if (F.inkIn >= 0.5 && edgeOK) { v = stoneColor(F, bgL); solid++; cf = 0.8; }
+          else if (F.inkIn < 0.25 && F.edgeRing >= 0.25 && F.edgeMin >= 0.12) { v = bgL >= 128 ? 2 : 1; cf = 0.7; }   // outlined stone, same colour as the board
+          else { v = 0; cf = F.inkIn > 0.25 ? 0.5 : 0.9; }
+        }
+      } else {
+        var cDiff = Math.abs(F.medIn - bgL) >= 30;
+        var cEdge = !cDiff || Math.abs(F.medIn - F.medDiag) >= 0.45 * Math.abs(F.medIn - bgL);
+        if (F.inkIn >= 0.5 && F.qin >= 0.3 && cEdge) { v = stoneColor(F, bgL); solid++; if (!cDiff) cf = 0.5; }
+        else if (F.xDiag >= 0.45 && F.xOff <= 0.2 && F.qin >= 0.03) { v = 1; cf = 0.75; marks++; }      // X mark: ink only on the diagonals
+        else if (F.ringMax >= 0.45 && F.ctr <= 0.15 && F.qout >= 0.05) { v = 2; cf = 0.75; marks++; }  // O mark / outlined stone: a closed ring
+        else { v = 0; if (F.inkOut > 0.08 || F.inkIn > 0.06) cf = 0.5; }
+      }
+      cells[q] = v; conf[q] = cf;
+      if (v === 1) black++; else if (v === 2) white++;
+      if (cf < 0.65) unsure++;
+      if (v && cf >= 0.6) sure++;
+      if (v && cf >= 0.9) strongN++;
+    }
+    return { cells: cells, conf: conf, n: n, solid: solid, sure: sure, strong: strongN, marks: marks, black: black, white: white, unsure: unsure,
+      bg: bg, bgL: bgL, tc: Tc, typArm: typArm, feats: opts.withFeats ? feats : null };
+  }
+  function histMed(h, n, dflt) {
+    if (!n) return dflt;
+    var half = n / 2, acc = 0;
+    for (var b = 0; b < 64; b++) { acc += h[b]; if (acc >= half) return b * 4 + 2; }
+    return dflt;
+  }
+  // Dark stone (black / first player) or light stone. Move numbers and last-move marks sit in the
+  // middle of a stone, so the outer ring tells the stone's own colour best.
+  function stoneColor(F, bgL) {
+    var thr = bgL >= 128 ? bgL - 60 : bgL + 60;
+    var L;
+    if (Math.abs(F.medOut - bgL) >= 25) L = F.medOut;      // the stone covers the outer ring
+    else if (F.inkIn >= 0.85) L = F.medIn;                  // a small stone inside the inner ring
+    else return bgL >= 128 ? 2 : 1;                         // a stone the colour of the board itself
+    return L < thr ? 1 : 2;
+  }
+
+  /* ---------- quick check that a saved grid still matches a new frame ---------- */
+  function verify(img, grid) {
+    var pad = Math.ceil(Math.max(grid.sx, grid.sy)) + 6;
+    var x = Math.max(0, Math.floor(grid.x0 - pad)), y = Math.max(0, Math.floor(grid.y0 - pad));
+    var x2 = Math.min(img.width, Math.ceil(grid.x0 + (grid.lines - 1) * grid.sx + pad));
+    var y2 = Math.min(img.height, Math.ceil(grid.y0 + (grid.lines - 1) * grid.sy + pad));
+    if (x2 - x < 20 || y2 - y < 20) return 0;
+    // thick lines are checked on a downscaled copy, like detection did
+    var f = grid.f || 1;
+    var G = makeGray(img, { x: x, y: y, w: x2 - x, h: y2 - y }, f);
+    var T = 14, cov = 0, k = 0;
+    var xa = (grid.x0 - x) / f, xb = xa + (grid.lines - 1) * grid.sx / f, ya = (grid.y0 - y) / f, yb = ya + (grid.lines - 1) * grid.sy / f;
+    var picks = [0, Math.floor(grid.lines / 2), grid.lines - 1];
+    for (var a = 0; a < picks.length; a++) {
+      cov += rowCov(G, ya + picks[a] * grid.sy / f, xa, xb, grid.dark, T);
+      cov += colCov(G, xa + picks[a] * grid.sx / f, ya, yb, grid.dark, T);
+      k += 2;
+    }
+    return cov / k;
+  }
+
+  return { detect: detect, read: read, setMode: setMode, fromBox: fromBox, siteXY: siteXY, verify: verify,
+    _gray: makeGray, _profiles: lineProfiles, _peaks: findPeaks, _chains: findChains, _band: bandCov, _covOf: covOf };
+}
+
+</script>
+<script>
+(function () {
+  'use strict';
+  var V = OmokVision();
+  var $ = function (id) { return document.getElementById(id); };
+  var STANDALONE = !!window.__OMOK_STANDALONE;
+  var LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  var RULE_HINT = ['금지 수 없음 · 6목 이상도 승리', '흑만 33·44·6목 금지 · 흑은 정확히 5목', '흑백 모두 33 금지 · 44는 허용'];
+
+  /* ---------------- settings ---------------- */
+  var settings = { rule: 0, me: 0, time: 1500, mode: 'auto', swap: false, sound: false };
+  try { var saved = JSON.parse(localStorage.getItem('omok-hunsu') || 'null'); if (saved) for (var k in settings) if (k in saved) settings[k] = saved[k]; } catch (e) {}
+  function saveSettings() { try { localStorage.setItem('omok-hunsu', JSON.stringify(settings)); } catch (e) {} }
+
+  /* ---------------- state ---------------- */
+  var S = {
+    source: 'sample',        // sample | image | live | manual
+    frameCanvas: document.createElement('canvas'),
+    frameW: 0, frameH: 0,
+    grid: null, gridManual: false,
+    raw: null, conf: null, n: 15,
+    overrides: {},           // site -> {raw, v}
+    cells: null, counts: { b: 0, w: 0 },
+    toMove: 1, turnFlip: false, turnOk: true,
+    result: null, resultKey: '', pendingKey: '', thinking: false,
+    lastAdded: -1, prevStable: null,
+    zoom: true, showLine: false, regionMode: false, drag: null,
+    manual: { n: 15, cells: null, hist: [] },
+    live: { stream: null, cap: null, monitor: false, timer: 0, lastDetect: 0, lost: 0, prevKey: '', stableKey: '', fw: 0, fh: 0 },
+    pip: null
+  };
+
+  /* ---------------- engine (web worker with main-thread fallback) ---------------- */
+  var Engine = (function () {
+    var src = OmokEngine.toString() + '\nvar __E = OmokEngine();\nself.onmessage = function (e) { var r; try { r = __E.analyze(e.data.req); } catch (err) { r = { ok: false, error: String(err && err.message || err) }; } self.postMessage({ id: e.data.id, res: r }); };\nself.postMessage({ hello: 1 });';
+    var worker = null, busy = null, seq = 0, local = null, workerBroken = false;
+    function spawn() {
+      if (workerBroken) return;
+      try {
+        var url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+        worker = new Worker(url);
+        worker.onmessage = function (e) {
+          if (e.data && e.data.hello) return;
+          if (busy && e.data.id === busy.id) { var b = busy; busy = null; clearTimeout(b.watch); b.resolve(e.data.res); }
+        };
+        worker.onerror = function () { workerBroken = true; worker = null; if (busy) { var b = busy; busy = null; clearTimeout(b.watch); runLocal(b.req, b.resolve); } };
+      } catch (e) { workerBroken = true; worker = null; }
+    }
+    function runLocal(req, resolve) {
+      setTimeout(function () {
+        if (!local) local = OmokEngine();
+        var r; try { r = local.analyze(req); } catch (err) { r = { ok: false, error: String(err) }; }
+        resolve(r);
+      }, 30);
+    }
+    function analyze(req) {
+      return new Promise(function (resolve) {
+        if (busy) { if (worker) { worker.terminate(); worker = null; } var old = busy; busy = null; clearTimeout(old.watch); old.resolve(null); }
+        if (!worker) spawn();
+        if (!worker) { runLocal(req, resolve); return; }
+        var id = ++seq;
+        busy = { id: id, resolve: resolve, req: req };
+        busy.watch = setTimeout(function () {
+          if (busy && busy.id === id) { var b = busy; busy = null; if (worker) worker.terminate(); worker = null; workerBroken = true; runLocal(b.req, b.resolve); }
+        }, req.timeMs * 3 + 6000);
+        worker.postMessage({ id: id, req: req });
+      });
+    }
+    return { analyze: analyze };
+  })();
+
+  /* ---------------- small helpers ---------------- */
+  var toastTimer = 0;
+  function toast(msg) { var t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 3200); }
+  function setStatus(text, tone) { $('statusText').textContent = text; $('status').dataset.tone = tone || 'idle'; }
+  function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  var colors = {};
+  function readColors() {
+    ['--accent', '--danger', '--warn', '--good', '--wood', '--wood-edge', '--wood-line', '--surface', '--ink', '--muted', '--sunk', '--line'].forEach(function (k) { colors[k] = cssVar(k); });
+  }
+  readColors();
+  try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { readColors(); redrawAll(); }); } catch (e) {}
+  new MutationObserver(function () { readColors(); redrawAll(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  function coordName(i, j, n) { return (LETTERS[i] || '?') + (n - j); }
+  function sideName(c) { return S.markMode ? (c === 1 ? 'X' : 'O') : (c === 1 ? '흑' : '백'); }
+
+  /* ---------------- sample screen (a game window drawn in code) ---------------- */
+  var SAMPLE = [[7, 7], [6, 6], [7, 8], [7, 6], [8, 7], [5, 6], [8, 6], [6, 8], [8, 5], [8, 4]];
+  function drawSample() {
+    var W = 980, H = 660, c = S.frameCanvas, g;
+    c.width = W; c.height = H; g = c.getContext('2d', { willReadFrequently: true });
+    g.fillStyle = '#23272e'; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#2e333b'; g.fillRect(0, 0, W, 44);
+    g.fillStyle = '#e9edf2'; g.font = '600 16px sans-serif'; g.fillText('오목 대전 · 3번 방', 18, 28);
+    // player panel
+    g.fillStyle = '#2b3038'; g.fillRect(18, 64, 220, 560);
+    var rows = [['● 나 (흑)', '#f3f4f6'], ['○ 상대 (백)', '#cfd5dd'], ['남은 시간 0:24', '#9aa3ae'], ['10수 진행', '#9aa3ae']];
+    rows.forEach(function (r, i) { g.fillStyle = r[1]; g.font = '15px sans-serif'; g.fillText(r[0], 36, 100 + i * 40); });
+    g.fillStyle = '#3a404a'; g.fillRect(36, 560, 86, 34); g.fillRect(132, 560, 86, 34);
+    g.fillStyle = '#e9edf2'; g.font = '14px sans-serif'; g.fillText('무르기', 56, 582); g.fillText('기권', 160, 582);
+    // board
+    var n = 15, s = 38, bx = 312, by = 96, m = 30, L = (n - 1) * s;
+    var grd = g.createLinearGradient(bx - m, by - m, bx + L + m, by + L + m);
+    grd.addColorStop(0, '#e2bd78'); grd.addColorStop(1, '#d3a65c');
+    g.fillStyle = grd; g.fillRect(bx - m, by - m, L + 2 * m, L + 2 * m);
+    g.globalAlpha = 0.08; g.strokeStyle = '#7a5520';
+    for (var q = 0; q < 70; q++) { g.beginPath(); var yy = by - m + q * 9 + Math.sin(q) * 3; g.moveTo(bx - m, yy); g.bezierCurveTo(bx + 120, yy + 6, bx + 300, yy - 6, bx + L + m, yy + 2); g.stroke(); }
+    g.globalAlpha = 1; g.strokeStyle = '#3d2c14'; g.lineWidth = 1;
+    for (var i = 0; i < n; i++) {
+      g.beginPath(); g.moveTo(bx + 0.5, by + i * s + 0.5); g.lineTo(bx + L + 0.5, by + i * s + 0.5); g.stroke();
+      g.beginPath(); g.moveTo(bx + i * s + 0.5, by + 0.5); g.lineTo(bx + i * s + 0.5, by + L + 0.5); g.stroke();
+    }
+    g.fillStyle = '#3d2c14';
+    [[3, 3], [11, 3], [7, 7], [3, 11], [11, 11]].forEach(function (p) { g.beginPath(); g.arc(bx + p[0] * s + 0.5, by + p[1] * s + 0.5, 3.5, 0, 7); g.fill(); });
+    SAMPLE.forEach(function (p, k) { paintStone(g, bx + p[0] * s + 0.5, by + p[1] * s + 0.5, s * 0.46, k % 2 ? 2 : 1); });
+    var last = SAMPLE[SAMPLE.length - 1];
+    g.fillStyle = '#e0393e'; g.beginPath(); g.arc(bx + last[0] * s + 0.5, by + last[1] * s + 0.5, 4, 0, 7); g.fill();
+    S.frameW = W; S.frameH = H;
+  }
+  function paintPiece(g, x, y, r, c) {
+    if (!S.markMode) { paintStone(g, x, y, r, c); return; }
+    g.save(); g.lineCap = 'round'; g.lineWidth = Math.max(2, r * 0.28);
+    if (c === 1) { var k = r * 0.62; g.strokeStyle = '#2f63e0'; g.beginPath(); g.moveTo(x - k, y - k); g.lineTo(x + k, y + k); g.moveTo(x + k, y - k); g.lineTo(x - k, y + k); g.stroke(); }
+    else { g.strokeStyle = '#e0434c'; g.beginPath(); g.arc(x, y, r * 0.62, 0, Math.PI * 2); g.stroke(); }
+    g.restore();
+  }
+  function paintStone(g, x, y, r, c) {
+    g.save();
+    g.shadowColor = 'rgba(0,0,0,0.35)'; g.shadowBlur = r * 0.35; g.shadowOffsetX = r * 0.08; g.shadowOffsetY = r * 0.12;
+    var grd = g.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
+    if (c === 1) { grd.addColorStop(0, '#6a6e75'); grd.addColorStop(0.55, '#1d1f23'); grd.addColorStop(1, '#0a0b0d'); }
+    else { grd.addColorStop(0, '#ffffff'); grd.addColorStop(0.7, '#ecebe7'); grd.addColorStop(1, '#c9c7c1'); }
+    g.fillStyle = grd; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    g.restore();
+  }
+
+  /* ---------------- reading a frame ---------------- */
+  function frameData() {
+    var c = S.frameCanvas;
+    return c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, c.width, c.height);
+  }
+  function detectOn(img, roi) {
+    var opts = { mode: settings.mode };
+    if (roi) opts.roi = roi;
+    var g = V.detect(img, opts);
+    return g && g.ok ? g : null;
+  }
+  function applyReading(rd) {
+    var n = rd.n, raw = Array.prototype.slice.call(rd.cells);
+    if (settings.swap) raw = raw.map(function (v) { return v === 1 ? 2 : (v === 2 ? 1 : 0); });
+    // user corrections hold while the screen at that point stays the same
+    var cells = raw.slice(0);
+    for (var key in S.overrides) {
+      var o = S.overrides[key], q = +key;
+      if (q >= n * n || raw[q] !== o.raw) { delete S.overrides[key]; continue; }
+      cells[q] = o.v;
+    }
+    S.raw = raw; S.conf = rd.conf; S.n = n;
+    S.markMode = rd.marks >= 2 && rd.marks >= 0.6 * (rd.black + rd.white);
+    return cells;
+  }
+  function processStill(roi) {
+    var img = frameData();
+    var g = roi ? detectOn(img, roi) : (S.gridManual && S.grid ? S.grid : detectOn(img, null));
+    if (!g && roi && S.pendingBox) g = V.fromBox(S.pendingBox, 15, settings.mode === 'cell' ? 'cell' : 'point');
+    S.grid = g;
+    if (!g) {
+      S.cells = null; S.result = null; S.resultKey = '';
+      setStatus('판을 못 찾았어요', 'bad');
+      showStageMsg('판을 찾지 못했어요. 판이 크게 보이게 다시 찍거나, 아래 [판 위치 지정]으로 판의 두 모서리를 드래그하세요.');
+      $('recog').textContent = '판을 찾는 중 실패';
+      renderAll();
+      return;
+    }
+    if (settings.mode !== 'auto' && g.mode !== settings.mode) g = S.grid = V.setMode(g, settings.mode);
+    var rd = V.read(img, g);
+    hideStageMsg();
+    setCells(applyReading(rd), true);
+  }
+
+  /* ---------------- turn & analysis ---------------- */
+  function countStones(cells) { var b = 0, w = 0; for (var i = 0; i < cells.length; i++) { if (cells[i] === 1) b++; else if (cells[i] === 2) w++; } return { b: b, w: w }; }
+  function setCells(cells, fresh) {
+    var prev = S.cells, prevCounts = S.counts;
+    S.cells = cells;
+    var c = countStones(cells);
+    if (!prev || prev.length !== cells.length || c.b !== prevCounts.b || c.w !== prevCounts.w) S.turnFlip = false;
+    S.counts = c;
+    // last stone put down (one new stone since the previous stable board)
+    if (prev && prev.length === cells.length) {
+      var added = -1, nAdd = 0, nOther = 0;
+      for (var i = 0; i < cells.length; i++) if (cells[i] !== prev[i]) { if (!prev[i] && cells[i]) { added = i; nAdd++; } else nOther++; }
+      if (nAdd === 1 && nOther === 0) S.lastAdded = added;
+      else if (nAdd || nOther) S.lastAdded = -1;
+    } else if (fresh) S.lastAdded = -1;
+    var toMove, ok = true;
+    if (c.b === c.w) toMove = 1; else if (c.b === c.w + 1) toMove = 2; else { ok = false; toMove = c.b > c.w ? 2 : 1; }
+    if (S.turnFlip) toMove = 3 - toMove;
+    S.toMove = toMove; S.turnOk = ok;
+    updateRecogText();
+    requestAnalysis();
+    renderAll();
+  }
+  function updateRecogText() {
+    var r = $('recog');
+    if (S.source === 'manual') { r.innerHTML = '직접 놓기 · <b>' + S.manual.n + '줄</b> · ' + sideName(1) + ' ' + S.counts.b + ' · ' + sideName(2) + ' ' + S.counts.w; return; }
+    if (!S.grid || !S.cells) return;
+    var g = S.grid, unsure = 0;
+    if (S.conf) for (var i = 0; i < S.conf.length; i++) if (S.conf[i] < 0.6 && S.cells[i]) unsure++;
+    var txt = (S.source === 'sample' ? '예시 판 · ' : '') + '<b>' + g.n + '×' + g.n + '</b> ' + (g.mode === 'cell' ? '칸 안' : '선 위') + ' · ' + sideName(1) + ' ' + S.counts.b + ' · ' + sideName(2) + ' ' + S.counts.w;
+    if (unsure) txt += ' · <span style="color:var(--warn)">확실치 않은 돌 ' + unsure + '개</span>';
+    r.innerHTML = txt;
+  }
+  function analysisKey() { return S.n + '|' + settings.rule + '|' + S.toMove + '|' + settings.time + '|' + S.cells.join(''); }
+  function requestAnalysis() {
+    if (!S.cells) return;
+    var key = analysisKey();
+    if (key === S.resultKey || key === S.pendingKey) return;
+    S.pendingKey = key; S.thinking = true;
+    setStatus('생각하는 중…', 'busy');
+    renderAdvice();
+    var req = { size: S.n, cells: S.cells.slice(0), toMove: S.toMove, rule: settings.rule, timeMs: settings.time };
+    Engine.analyze(req).then(function (res) {
+      if (!res || S.pendingKey !== key) return;
+      S.pendingKey = ''; S.thinking = false;
+      if (!res.ok) { setStatus('분석 실패', 'bad'); return; }
+      S.result = res; S.resultKey = key;
+      setStatus(S.source === 'live' ? '화면 보는 중' : '추천 완료', S.source === 'live' ? 'live' : 'idle');
+      if (settings.sound && res.move && (settings.me === 0 || settings.me === res.side)) ding();
+      renderAll();
+    });
+  }
+
+  /* ---------------- live screen ---------------- */
+  function captureState() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) return 'unsupported';
+    try { if (document.featurePolicy && !document.featurePolicy.allowsFeature('display-capture')) return 'blocked'; } catch (e) {}
+    return 'ok';
+  }
+  function startLive() {
+    var st = captureState();
+    if (st === 'unsupported') { toast('이 기기에서는 화면 보기를 지원하지 않아요. 스크린샷을 붙여넣어 주세요.'); return; }
+    if (st === 'blocked') { openHelp(); return; }
+    var asked = performance.now();
+    navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 5, max: 10 }, displaySurface: 'window' }, audio: false, selfBrowserSurface: 'exclude', surfaceSwitching: 'include' })
+      .then(function (stream) {
+        stopLive(true);
+        var v = $('liveVideo');
+        v.srcObject = stream;
+        var tr = stream.getVideoTracks()[0];
+        tr.addEventListener('ended', function () { stopLive(); });
+        var surf = ''; try { surf = (tr.getSettings() || {}).displaySurface || ''; } catch (e2) {}
+        S.live.monitor = surf === 'monitor';
+        S.live.cap = null;
+        try { if (window.ImageCapture) S.live.cap = new ImageCapture(tr); } catch (e3) {}
+        return v.play().then(function () {
+          S.live.stream = stream; S.source = 'live'; S.grid = null; S.gridManual = false; S.cells = null; S.result = null; S.resultKey = '';
+          S.overrides = {}; S.lastAdded = -1; S.live.lost = 0; S.live.lastDetect = 0; S.live.prevKey = ''; S.live.stableKey = '';
+          setModeUI();
+          setStatus('판을 찾는 중…', 'busy');
+          showStageMsg('공유한 창에서 오목 판을 찾고 있어요');
+          if (S.live.monitor) toast('전체 화면을 공유해서, 이 창의 판이 다시 읽히지 않게 점선 판으로 보여 줄게요. 게임 창만 공유하면 더 정확해요.');
+          liveTick();
+        });
+      })
+      .catch(function (e) {
+        // refused at once, with no picker shown: the page is not allowed to capture
+        if (e && e.name === 'NotAllowedError' && !STANDALONE && (performance.now() - asked < 400 || /policy/i.test(e.message || ''))) { openHelp(); return; }
+        toast(e && e.name === 'NotAllowedError' ? '화면 공유를 취소했어요' : '화면을 가져오지 못했어요: ' + (e && e.message || e));
+      });
+  }
+  function stopLive(silent) {
+    clearTimeout(S.live.timer);
+    if (S.live.stream) { S.live.stream.getTracks().forEach(function (t) { t.stop(); }); S.live.stream = null; }
+    $('liveVideo').srcObject = null;
+    if (S.source === 'live' && !silent) {
+      // keep the last frame on screen as a still image
+      S.source = 'image';
+      setModeUI();
+      setStatus('화면 보기를 멈췄어요', 'idle');
+    }
+  }
+  function putFrame(src, w, h) {
+    if (!w || !h) return false;
+    var c = S.frameCanvas;
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    c.getContext('2d', { willReadFrequently: true }).drawImage(src, 0, 0, w, h);
+    S.frameW = w; S.frameH = h;
+    return true;
+  }
+  function grabVideo() { var v = $('liveVideo'); return putFrame(v, v.videoWidth, v.videoHeight); }
+  // ImageCapture keeps delivering frames when this tab is in the background, where a muted <video> may pause.
+  function grabFrame() {
+    var cap = S.live.cap;
+    if (!cap || (!document.hidden && $('liveVideo').videoWidth)) return Promise.resolve(grabVideo());
+    var timeout = new Promise(function (res) { setTimeout(function () { res(null); }, 1200); });
+    return Promise.race([cap.grabFrame().catch(function () { return null; }), timeout]).then(function (bmp) {
+      if (!bmp) return grabVideo();
+      var ok = putFrame(bmp, bmp.width, bmp.height);
+      if (bmp.close) bmp.close();
+      return ok;
+    });
+  }
+  function liveTick() {
+    if (S.source !== 'live') return;
+    grabFrame().then(liveStep, function () { liveStep(false); });
+  }
+  function liveStep(gotFrame) {
+    if (S.source !== 'live') return;
+    try {
+      if (gotFrame) {
+        var now = performance.now(), fw = S.frameW, fh = S.frameH;
+        if (S.grid && (fw !== S.live.fw || fh !== S.live.fh) && !S.gridManual) S.grid = null;
+        S.live.fw = fw; S.live.fh = fh;
+        if (!S.grid) {
+          if (now - S.live.lastDetect > 1300) {
+            S.live.lastDetect = now;
+            var g = detectOn(frameData(), null);
+            if (g) { S.grid = g; S.live.prevKey = ''; S.live.stableKey = ''; hideStageMsg(); setStatus('판을 찾았어요', 'live'); }
+            else { setStatus('판을 찾는 중…', 'busy'); showStageMsg('공유한 창에서 오목 판이 안 보여요. 판이 보이게 해 주세요.'); }
+          }
+        }
+        if (S.grid) {
+          var g2 = S.grid, pad = Math.ceil(Math.max(g2.sx, g2.sy) * 1.2);
+          var x = Math.max(0, Math.floor(g2.rect.x - pad)), y = Math.max(0, Math.floor(g2.rect.y - pad));
+          var x2 = Math.min(fw, Math.ceil(g2.rect.x + g2.rect.w + pad)), y2 = Math.min(fh, Math.ceil(g2.rect.y + g2.rect.h + pad));
+          var sub = S.frameCanvas.getContext('2d', { willReadFrequently: true }).getImageData(x, y, Math.max(1, x2 - x), Math.max(1, y2 - y));
+          var gs = shiftGrid(g2, x, y);
+          var cov = V.verify(sub, gs);
+          if (cov < 0.2 && !S.gridManual) {
+            if (++S.live.lost >= 3) { S.grid = null; S.live.lost = 0; S.live.lastDetect = 0; setStatus('판을 다시 찾는 중…', 'busy'); }
+          } else {
+            S.live.lost = 0;
+            var rd = V.read(sub, gs);
+            var key = Array.prototype.join.call(rd.cells, '');
+            if (key === S.live.prevKey && key !== S.live.stableKey) {
+              S.live.stableKey = key;
+              setCells(applyReading(rd), false);
+            }
+            S.live.prevKey = key;
+          }
+        }
+      }
+    } catch (err) { console.error(err); }
+    S.live.timer = setTimeout(liveTick, 450);
+  }
+  function shiftGrid(g, ox, oy) {
+    var o = {}; for (var k in g) o[k] = g[k];
+    o.x0 = g.x0 - ox; o.y0 = g.y0 - oy;
+    o.rect = { x: g.rect.x - ox, y: g.rect.y - oy, w: g.rect.w, h: g.rect.h };
+    return o;
+  }
+
+  /* ---------------- images: paste, open, drop ---------------- */
+  function loadBlob(blob) {
+    if (!blob || !/^image\//.test(blob.type)) { toast('이미지 파일만 읽을 수 있어요'); return; }
+    var url = URL.createObjectURL(blob), img = new Image();
+    img.onload = function () {
+      stopLive(true);
+      var c = S.frameCanvas;
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.getContext('2d', { willReadFrequently: true }).drawImage(img, 0, 0);
+      S.frameW = c.width; S.frameH = c.height;
+      URL.revokeObjectURL(url);
+      S.source = 'image'; S.grid = null; S.gridManual = false; S.overrides = {}; S.cells = null; S.result = null; S.resultKey = ''; S.lastAdded = -1;
+      setModeUI();
+      setStatus('판을 읽는 중…', 'busy');
+      setTimeout(function () { processStill(null); }, 20);
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); toast('이미지를 열지 못했어요'); };
+    img.src = url;
+  }
+  document.addEventListener('paste', function (e) {
+    var items = (e.clipboardData && e.clipboardData.items) || [];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].kind === 'file' && /^image\//.test(items[i].type)) { e.preventDefault(); loadBlob(items[i].getAsFile()); return; }
+    }
+    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    toast('클립보드에 이미지가 없어요. 게임 판을 캡처한 뒤 다시 붙여넣어 주세요.');
+  });
+  $('btnPaste').addEventListener('click', function () {
+    var tip = function () { toast('게임 판을 캡처(Win+Shift+S)한 뒤 이 페이지를 한 번 누르고 Ctrl+V 하세요'); };
+    if (!STANDALONE || !navigator.clipboard || !navigator.clipboard.read) { tip(); return; }
+    navigator.clipboard.read().then(function (items) {
+      for (var i = 0; i < items.length; i++) {
+        var t = items[i].types.filter(function (x) { return /^image\//.test(x); })[0];
+        if (t) return items[i].getType(t).then(loadBlob);
+      }
+      tip();
+    }).catch(tip);
+  });
+  $('btnFile').addEventListener('click', function () { $('fileInput').click(); });
+  $('fileInput').addEventListener('change', function (e) { var f = e.target.files && e.target.files[0]; if (f) loadBlob(f); e.target.value = ''; });
+  var wrap = $('stageWrap');
+  ['dragenter', 'dragover'].forEach(function (t) { wrap.addEventListener(t, function (e) { e.preventDefault(); wrap.classList.add('dropping'); }); });
+  ['dragleave', 'drop'].forEach(function (t) { wrap.addEventListener(t, function (e) { e.preventDefault(); wrap.classList.remove('dropping'); }); });
+  wrap.addEventListener('drop', function (e) { var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) loadBlob(f); });
+
+  /* ---------------- manual board ---------------- */
+  function startManual() {
+    stopLive(true);
+    S.source = 'manual'; S.grid = null; S.overrides = {}; S.result = null; S.resultKey = ''; S.lastAdded = -1;
+    if (!S.manual.cells || S.manual.cells.length !== S.manual.n * S.manual.n) { S.manual.cells = new Array(S.manual.n * S.manual.n).fill(0); S.manual.hist = []; }
+    S.n = S.manual.n; S.conf = null; S.markMode = false;
+    setModeUI(); hideStageMsg();
+    setStatus('직접 놓기', 'idle');
+    setCells(S.manual.cells.slice(0), true);
+  }
+  function manualPut(q) {
+    var m = S.manual;
+    if (m.cells[q]) { m.hist.push({ q: q, prev: m.cells[q] }); m.cells[q] = 0; }
+    else { m.hist.push({ q: q, prev: 0 }); m.cells[q] = S.toMove; }
+    setCells(m.cells.slice(0), false);
+  }
+  $('btnUndo').addEventListener('click', function () { var m = S.manual, h = m.hist.pop(); if (!h) return; m.cells[h.q] = h.prev; setCells(m.cells.slice(0), false); });
+  $('btnClear').addEventListener('click', function () { S.manual.cells = new Array(S.manual.n * S.manual.n).fill(0); S.manual.hist = []; S.lastAdded = -1; setCells(S.manual.cells.slice(0), true); });
+  $('btnPlayAI').addEventListener('click', function () {
+    var r = S.result; if (!r || !r.move || S.source !== 'manual') return;
+    manualPut(r.move.y * S.n + r.move.x);
+  });
+  $('manualSize').addEventListener('change', function (e) { S.manual.n = +e.target.value; S.manual.cells = null; startManual(); });
+
+  /* ---------------- stage drawing ---------------- */
+  var stage = $('stage'), sctx = stage.getContext('2d');
+  var view = { x: 0, y: 0, w: 1, h: 1, scale: 1, dx: 0, dy: 0 };
+  function fitCanvas(cv) {
+    var r = cv.getBoundingClientRect(), d = Math.min(window.devicePixelRatio || 1, 2.5);
+    var w = Math.max(1, Math.round(r.width * d)), h = Math.max(1, Math.round(r.height * d));
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    return d;
+  }
+  function computeView() {
+    var fw = S.frameW || 1, fh = S.frameH || 1, g = S.grid;
+    var vx = 0, vy = 0, vw = fw, vh = fh;
+    if (S.zoom && g && !S.regionMode) {
+      var m = Math.max(g.sx, g.sy) * 1.1;
+      vx = Math.max(0, g.rect.x - m); vy = Math.max(0, g.rect.y - m);
+      vw = Math.min(fw, g.rect.x + g.rect.w + m) - vx; vh = Math.min(fh, g.rect.y + g.rect.h + m) - vy;
+    }
+    var cw = stage.width, ch = stage.height, sc = Math.min(cw / vw, ch / vh);
+    view = { x: vx, y: vy, w: vw, h: vh, scale: sc, dx: (cw - vw * sc) / 2, dy: (ch - vh * sc) / 2 };
+  }
+  function toStage(x, y) { return [view.dx + (x - view.x) * view.scale, view.dy + (y - view.y) * view.scale]; }
+  function fromStage(px, py) { return [view.x + (px - view.dx) / view.scale, view.y + (py - view.dy) / view.scale]; }
+  var pulseT = 0;
+  function drawStage() {
+    var d = fitCanvas(stage), g = sctx;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, stage.width, stage.height);
+    if (S.source === 'manual' || (S.source === 'live' && S.live.monitor && S.cells)) {
+      var size = Math.min(stage.width, stage.height) - 24 * d;
+      var geo = drawBoard(g, (stage.width - size) / 2, (stage.height - size) / 2, size, boardOpts(true));
+      S.stageGeo = S.source === 'manual' ? geo : null;
+      return;
+    }
+    S.stageGeo = null;
+    computeView();
+    var src = S.source === 'live' && $('liveVideo').videoWidth ? $('liveVideo') : S.frameCanvas;
+    if (S.frameW) {
+      g.imageSmoothingQuality = 'high';
+      try { g.drawImage(src, view.x, view.y, view.w, view.h, view.dx, view.dy, view.w * view.scale, view.h * view.scale); } catch (e) {}
+    }
+    var gr = S.grid;
+    if (gr && !S.regionMode) drawStageOverlay(g, gr, d);
+    if (S.drag) {
+      var a = toStage(S.drag.x0, S.drag.y0), b = toStage(S.drag.x1, S.drag.y1);
+      g.strokeStyle = colors['--accent']; g.lineWidth = 2 * d; g.setLineDash([6 * d, 4 * d]);
+      g.strokeRect(Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]));
+      g.setLineDash([]);
+      [a, b].forEach(function (p) { g.fillStyle = colors['--accent']; g.beginPath(); g.arc(p[0], p[1], 5 * d, 0, 7); g.fill(); });
+    }
+  }
+  function sitePx(gr, i, j) { var p = V.siteXY(gr, i, j); return toStage(p[0], p[1]); }
+  function drawStageOverlay(g, gr, d) {
+    var n = gr.n, cell = Math.min(gr.sx, gr.sy) * view.scale;
+    // board outline
+    var a = sitePx(gr, 0, 0), b = sitePx(gr, n - 1, n - 1);
+    g.strokeStyle = colors['--accent']; g.globalAlpha = 0.55; g.lineWidth = 1.5 * d; g.setLineDash([5 * d, 4 * d]);
+    g.strokeRect(a[0] - cell * 0.5, a[1] - cell * 0.5, b[0] - a[0] + cell, b[1] - a[1] + cell);
+    g.setLineDash([]); g.globalAlpha = 1;
+    // what was read: a small tag on every stone, so misreads are easy to spot
+    if (S.cells) {
+      for (var j = 0; j < n; j++) for (var i = 0; i < n; i++) {
+        var q = j * n + i, v = S.cells[q], p = sitePx(gr, i, j);
+        var corrected = S.overrides[q] !== undefined, unsure = v && S.conf && S.conf[q] < 0.6;
+        if (!v && !unsure && !corrected) continue;
+        var r = Math.max(2.5 * d, cell * 0.08);
+        if (corrected) { g.fillStyle = colors['--accent']; g.fillRect(p[0] - r, p[1] - r, 2 * r, 2 * r); }
+        else if (v) { g.fillStyle = v === 1 ? '#0f1114' : '#ffffff'; g.strokeStyle = v === 1 ? '#ffffff' : '#0f1114'; g.lineWidth = 1 * d; g.beginPath(); g.arc(p[0], p[1], r, 0, 7); g.fill(); g.stroke(); }
+        if (unsure) { g.strokeStyle = colors['--warn']; g.lineWidth = 2 * d; g.beginPath(); g.arc(p[0], p[1], cell * 0.42, 0, 7); g.stroke(); }
+      }
+    }
+    var res = currentResult();
+    if (!res) return;
+    // opponent threats
+    (res.threats.oppFive || []).concat(res.threats.oppOpen || []).forEach(function (t) {
+      var p = sitePx(gr, t.x, t.y);
+      g.strokeStyle = colors['--danger']; g.lineWidth = 2.5 * d; g.beginPath(); g.arc(p[0], p[1], cell * 0.36, 0, 7); g.stroke();
+    });
+    if (res.move) {
+      var mine = settings.me === 0 || settings.me === res.side;
+      var p0 = sitePx(gr, res.move.x, res.move.y);
+      var L0 = sitePx(gr, 0, res.move.y), L1 = sitePx(gr, n - 1, res.move.y), C0 = sitePx(gr, res.move.x, 0), C1 = sitePx(gr, res.move.x, n - 1);
+      g.strokeStyle = colors['--accent']; g.globalAlpha = mine ? 0.55 : 0.3; g.lineWidth = 2 * d;
+      g.beginPath(); g.moveTo(L0[0] - cell * 0.5, L0[1]); g.lineTo(L1[0] + cell * 0.5, L1[1]); g.moveTo(C0[0], C0[1] - cell * 0.5); g.lineTo(C1[0], C1[1] + cell * 0.5); g.stroke();
+      g.globalAlpha = 1;
+      drawTarget(g, p0[0], p0[1], cell, res.side, mine, d);
+    }
+  }
+  function drawTarget(g, x, y, cell, side, mine, d) {
+    var t = (performance.now() % 1400) / 1400, reduce = reducedMotion();
+    var col = colors['--accent'];
+    if (!mine) {
+      g.setLineDash([4 * d, 3 * d]); g.strokeStyle = col; g.lineWidth = 2 * d;
+      g.beginPath(); g.arc(x, y, cell * 0.45, 0, 7); g.stroke(); g.setLineDash([]);
+      return;
+    }
+    if (!reduce) {
+      g.globalAlpha = (1 - t) * 0.6; g.strokeStyle = col; g.lineWidth = 3 * d;
+      g.beginPath(); g.arc(x, y, cell * (0.5 + t * 0.55), 0, 7); g.stroke(); g.globalAlpha = 1;
+    }
+    if (S.markMode) { g.globalAlpha = 0.6; paintPiece(g, x, y, cell * 0.42, side); g.globalAlpha = 1; }
+    else { g.fillStyle = side === 1 ? 'rgba(15,17,20,0.55)' : 'rgba(255,255,255,0.7)'; g.beginPath(); g.arc(x, y, cell * 0.42, 0, 7); g.fill(); }
+    g.strokeStyle = '#ffffff'; g.lineWidth = 5 * d; g.beginPath(); g.arc(x, y, cell * 0.5, 0, 7); g.stroke();
+    g.strokeStyle = col; g.lineWidth = 3 * d; g.beginPath(); g.arc(x, y, cell * 0.5, 0, 7); g.stroke();
+  }
+  function reducedMotion() { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
+
+  /* ---------------- board diagram ---------------- */
+  var bcv = $('board'), bctx = bcv.getContext('2d');
+  function currentResult() {
+    if (!S.result || !S.cells) return null;
+    return S.resultKey === analysisKey() ? S.result : null;
+  }
+  function boardOpts(big) {
+    return { n: S.n, cells: S.cells, res: currentResult(), big: big, last: S.lastAdded, line: S.showLine,
+      conf: S.source === 'manual' ? null : S.conf, overrides: S.overrides,
+      dotted: S.source === 'live' && S.live.monitor };
+  }
+  function drawBoard(g, ox, oy, size, o) {
+    var n = o.n, d = Math.min(window.devicePixelRatio || 1, 2.5);
+    var pad = size * (n > 15 ? 0.055 : 0.065), cell = (size - 2 * pad) / (n - 1);
+    var x0 = ox + pad, y0 = oy + pad;
+    // wood
+    var grd = g.createLinearGradient(ox, oy, ox + size, oy + size);
+    grd.addColorStop(0, colors['--wood']); grd.addColorStop(1, colors['--wood-edge']);
+    g.fillStyle = grd; roundRect(g, ox, oy, size, size, size * 0.02); g.fill();
+    g.strokeStyle = colors['--wood-line']; g.lineWidth = Math.max(1, size / 520);
+    // dotted lines can't be mistaken for a real board when the whole screen is being read
+    if (o.dotted) g.setLineDash([Math.max(1.5, d * 1.5), Math.max(3, d * 3)]);
+    for (var i = 0; i < n; i++) {
+      g.beginPath(); g.moveTo(x0, y0 + i * cell); g.lineTo(x0 + (n - 1) * cell, y0 + i * cell); g.stroke();
+      g.beginPath(); g.moveTo(x0 + i * cell, y0); g.lineTo(x0 + i * cell, y0 + (n - 1) * cell); g.stroke();
+    }
+    g.setLineDash([]);
+    g.fillStyle = colors['--wood-line'];
+    starPoints(n).forEach(function (p) { g.beginPath(); g.arc(x0 + p[0] * cell, y0 + p[1] * cell, Math.max(1.5, cell * 0.1), 0, 7); g.fill(); });
+    // coordinates
+    var fs = Math.max(8, cell * 0.36);
+    g.fillStyle = colors['--wood-line']; g.globalAlpha = 0.75; g.font = '600 ' + fs + 'px "IBM Plex Mono", monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (i = 0; i < n; i++) {
+      g.fillText(String(i + 1), x0 + i * cell, oy + pad * 0.42);
+      g.fillText(String(i + 1), ox + pad * 0.42, y0 + i * cell);
+    }
+    g.globalAlpha = 1;
+    var res = o.res, cells = o.cells;
+    // stones
+    if (cells) for (var q = 0; q < n * n; q++) {
+      if (!cells[q]) continue;
+      paintPiece(g, x0 + (q % n) * cell, y0 + ((q / n) | 0) * cell, cell * 0.46, cells[q]);
+    }
+    if (cells && o.last >= 0 && cells[o.last]) {
+      g.fillStyle = '#e0393e'; g.beginPath(); g.arc(x0 + (o.last % n) * cell, y0 + ((o.last / n) | 0) * cell, cell * 0.12, 0, 7); g.fill();
+    }
+    // corrected / unsure marks
+    if (cells) for (var key in o.overrides || {}) {
+      var qq = +key; if (qq >= n * n) continue;
+      var cx = x0 + (qq % n) * cell, cy = y0 + ((qq / n) | 0) * cell;
+      g.strokeStyle = colors['--accent']; g.lineWidth = 2 * d; g.strokeRect(cx - cell * 0.48, cy - cell * 0.48, cell * 0.96, cell * 0.96);
+    }
+    if (cells && o.conf) for (q = 0; q < n * n; q++) {
+      if (o.conf[q] >= 0.6 || (o.overrides && o.overrides[q])) continue;
+      if (!cells[q]) continue;
+      g.strokeStyle = colors['--warn']; g.lineWidth = 2 * d; g.setLineDash([3 * d, 2 * d]);
+      g.beginPath(); g.arc(x0 + (q % n) * cell, y0 + ((q / n) | 0) * cell, cell * 0.5, 0, 7); g.stroke(); g.setLineDash([]);
+    }
+    if (res) {
+      // forbidden points
+      (res.forbidden || []).forEach(function (f) {
+        if (settings.rule === 2 && f.c !== res.side) return;
+        var fx = x0 + f.x * cell, fy = y0 + f.y * cell, r = cell * 0.2;
+        g.strokeStyle = colors['--danger']; g.lineWidth = 2 * d;
+        g.beginPath(); g.moveTo(fx - r, fy - r); g.lineTo(fx + r, fy + r); g.moveTo(fx + r, fy - r); g.lineTo(fx - r, fy + r); g.stroke();
+      });
+      // threats
+      (res.threats.oppFive || []).concat(res.threats.oppOpen || []).forEach(function (t) {
+        g.strokeStyle = colors['--danger']; g.lineWidth = 2 * d;
+        g.beginPath(); g.arc(x0 + t.x * cell, y0 + t.y * cell, cell * 0.3, 0, 7); g.stroke();
+      });
+      // expected sequence
+      if (o.line && res.line && res.line.length > 1) {
+        res.line.slice(0, 9).forEach(function (p, k) {
+          if (cells && cells[p.y * n + p.x]) return;
+          var px2 = x0 + p.x * cell, py2 = y0 + p.y * cell;
+          g.globalAlpha = 0.72; paintPiece(g, px2, py2, cell * 0.44, p.c); g.globalAlpha = 1;
+          g.fillStyle = p.c === 1 ? '#ffffff' : '#111111'; g.font = '700 ' + Math.max(9, cell * 0.46) + 'px "IBM Plex Mono", monospace';
+          g.fillText(String(k + 1), px2, py2 + 0.5);
+        });
+      }
+      if (res.move) {
+        var mine = settings.me === 0 || settings.me === res.side;
+        drawTarget(g, x0 + res.move.x * cell, y0 + res.move.y * cell, cell, res.side, mine, d);
+      }
+    }
+    return { x0: x0, y0: y0, cell: cell, n: n };
+  }
+  function starPoints(n) {
+    if (n === 15) return [[3, 3], [11, 3], [7, 7], [3, 11], [11, 11]];
+    if (n === 19) return [[3, 3], [9, 3], [15, 3], [3, 9], [9, 9], [15, 9], [3, 15], [9, 15], [15, 15]];
+    if (n === 13) return [[3, 3], [9, 3], [6, 6], [3, 9], [9, 9]];
+    return n % 2 ? [[n >> 1, n >> 1]] : [];
+  }
+  function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  function drawMini() {
+    fitCanvas(bcv);
+    bctx.setTransform(1, 0, 0, 1, 0, 0);
+    bctx.clearRect(0, 0, bcv.width, bcv.height);
+    if (!S.cells) {
+      S.miniGeo = drawBoard(bctx, 0, 0, bcv.width, { n: S.n || 15, cells: null, res: null, last: -1 });
+      return;
+    }
+    S.miniGeo = drawBoard(bctx, 0, 0, bcv.width, boardOpts(false));
+  }
+
+  /* ---------------- advice text ---------------- */
+  var KIND_TEXT = {
+    first: '첫 수는 한가운데가 가장 좋아요.',
+    five: '여기 두면 5목! 바로 이겨요.',
+    'block-five': '상대가 4목이에요. 여기를 꼭 막아야 해요.',
+    lost: '상대가 5목 자리를 두 곳 노려요. 한 곳이라도 막아 보세요.',
+    'open-four': '열린 4가 돼요. 다음 수에 이겨요.',
+    vct: '계속 공격하면 이기는 수순이 있어요. 첫 수예요.',
+    win: '이기는 수순을 찾았어요.',
+    losing: '상대에게 이기는 수순이 있어요. 가장 오래 버티는 수예요.',
+    draw: '더 둘 곳이 없어요.'
+  };
+  function reasonFor(res) {
+    if (res.kind === 'vcf') return '연속 4로 이기는 수순이 있어요 (' + Math.ceil(res.line.length / 2) + '수). 첫 수예요.';
+    if (KIND_TEXT[res.kind] && res.kind !== 'losing' && res.kind !== 'win') return KIND_TEXT[res.kind];
+    var t = res.tags || [], atk = '', def = '';
+    if (t.indexOf('four-three') >= 0) atk = '4-3 공격';
+    else if (t.indexOf('double-three') >= 0) atk = '쌍삼 공격';
+    else if (t.indexOf('four') >= 0) atk = '4를 만들어 상대가 막게 해요';
+    else if (t.indexOf('three') >= 0) atk = '열린 3을 만들어요';
+    if (t.indexOf('block-open-four') >= 0) def = '상대 열린 3을 막아요';
+    else if (t.indexOf('block-combo') >= 0) def = '상대가 노리는 쌍삼·4-3 자리를 먼저 차지해요';
+    else if (t.indexOf('block-three') >= 0) def = '상대 3을 막아요';
+    else if (t.indexOf('block-two') >= 0) def = '상대 2를 미리 끊어요';
+    var s = atk && def ? atk + ' · ' + def : (atk || def);
+    if (res.kind === 'win') return '이기는 수순을 찾았어요' + (s ? ' · ' + s : '') + '.';
+    if (res.kind === 'losing') return KIND_TEXT.losing;
+    return (s || '판 전체를 보고 고른 가장 좋은 자리예요') + '.';
+  }
+  function winChance(res) {
+    if (res.kind === 'five' || res.kind === 'open-four' || res.kind === 'vcf' || res.kind === 'vct' || res.kind === 'win') return 99;
+    if (res.kind === 'lost' || res.kind === 'losing') return 2;
+    if (res.kind === 'block-five' || res.kind === 'first') return null;
+    var p = 1 / (1 + Math.exp(-res.score / 2600));
+    return Math.max(3, Math.min(97, Math.round(p * 100)));
+  }
+  function renderAdvice() {
+    var res = currentResult(), coord = $('coord'), reason = $('reason');
+    var turnStone = $('turn').querySelector('.stone');
+    turnStone.className = 'stone ' + (S.markMode ? (S.toMove === 1 ? 'mark-x' : 'mark-o') : (S.toMove === 1 ? 'black' : 'white'));
+    var chips = [];
+    reason.className = 'reason';
+    $('evalRow').hidden = true;
+    $('btnTurn').hidden = !S.cells || S.source === 'manual';
+    if (!S.cells) {
+      coord.textContent = '–'; coord.className = 'coord wait';
+      $('turnText').textContent = '판을 기다리는 중';
+      $('where').textContent = S.source === 'live' ? '공유한 창에서 판을 찾고 있어요' : '스크린샷을 붙여넣거나 화면 보기를 시작하세요';
+      reason.textContent = S.source === 'live' ? '오목 판이 화면에 보이게 해 주세요.' : '판을 읽으면 여기에 추천 수가 나와요.';
+      $('chips').innerHTML = ''; $('meta').textContent = '';
+      return;
+    }
+    var mineTurn = settings.me === 0 || settings.me === S.toMove;
+    $('turnText').textContent = (settings.me && !mineTurn ? '상대(' + sideName(S.toMove) + ') 차례' : sideName(S.toMove) + ' 차례') + (S.turnOk ? '' : ' ?');
+    if (!S.turnOk) chips.push(['warn', '돌 수가 맞지 않아요 · 차례를 확인하세요']);
+    if (!res) {
+      coord.textContent = '…'; coord.className = 'coord wait';
+      $('where').textContent = 'AI가 수를 읽고 있어요';
+      reason.textContent = S.thinking ? '잠깐만요, 생각하는 중이에요.' : '';
+      $('chips').innerHTML = chipsHtml(chips); $('meta').textContent = '';
+      return;
+    }
+    if (res.kind === 'over') {
+      coord.textContent = '끝'; coord.className = 'coord wait';
+      $('where').textContent = sideName(res.winner) + '이 5목을 만들었어요';
+      reason.textContent = '게임이 끝났어요. 새 판을 시작하면 다시 읽어요.';
+      $('chips').innerHTML = chipsHtml(chips); $('meta').textContent = '';
+      return;
+    }
+    if (!res.move) {
+      coord.textContent = '–'; coord.className = 'coord wait';
+      $('where').textContent = ''; reason.textContent = KIND_TEXT.draw; $('chips').innerHTML = chipsHtml(chips);
+      return;
+    }
+    var m = res.move;
+    coord.innerHTML = '<span class="ax">→</span>' + (m.x + 1) + '<span class="ax">↓</span>' + (m.y + 1);
+    coord.className = 'coord' + (mineTurn ? '' : ' wait');
+    $('where').textContent = '왼쪽에서 ' + (m.x + 1) + '번째, 위에서 ' + (m.y + 1) + '번째 줄 · 기보 ' + coordName(m.x, m.y, res.size);
+    if (mineTurn) {
+      reason.textContent = reasonFor(res);
+      if (/five|open-four|vcf|vct|win/.test(res.kind) && res.kind !== 'block-five') reason.className = 'reason big-win';
+      if (res.kind === 'block-five' || res.kind === 'lost' || res.kind === 'losing') reason.className = 'reason big-danger';
+    } else {
+      reason.textContent = '상대가 둘 만한 자리를 점선으로 보여 줘요. 상대가 두면 바로 내 수를 알려 줄게요.';
+    }
+    var th = res.threats || {};
+    if (th.oppFive && th.oppFive.length) chips.push(['danger', '상대 4목']);
+    else if (th.oppOpen && th.oppOpen.length) chips.push(['danger', '상대 열린 3']);
+    if (th.oppVCF) chips.push(['danger', '상대 연속 4 위협']);
+    if (th.oppCombo && th.oppCombo.length) chips.push(['warn', '상대 쌍삼·4-3 노림']);
+    var nf = (res.forbidden || []).filter(function (f) { return f.c === res.side; }).length;
+    if (nf) chips.push(['warn', sideName(res.side) + ' 금수 ' + nf + '곳 (×)']);
+    $('chips').innerHTML = chipsHtml(chips);
+    var p = winChance(res);
+    if (p !== null) {
+      $('evalRow').hidden = false;
+      $('evalFill').style.width = p + '%';
+      $('evalFill').className = p < 40 ? 'bad' : '';
+      $('evalText').textContent = sideName(res.side) + ' ' + (p >= 50 ? '유리 ' : '불리 ') + p + '%';
+    }
+    var meta = [];
+    if (res.depth) meta.push(res.depth + '수 앞까지');
+    if (res.nodes) meta.push(res.nodes.toLocaleString('ko-KR') + '개 국면');
+    meta.push((res.ms / 1000).toFixed(1) + '초');
+    $('meta').textContent = meta.join(' · ');
+  }
+  function chipsHtml(list) { return list.map(function (c) { return '<span class="chip ' + c[0] + '">' + c[1] + '</span>'; }).join(''); }
+
+  /* ---------------- render all ---------------- */
+  function renderAll() { renderAdvice(); drawStage(); drawMini(); drawPip(); }
+  function redrawAll() { drawStage(); drawMini(); drawPip(); }
+  var rafOn = false;
+  function frameLoop() {
+    rafOn = false;
+    if (document.hidden) return;
+    drawStage(); drawMini();
+    if (currentResult() || S.source === 'live') scheduleFrame();
+  }
+  function scheduleFrame() {
+    if (rafOn) return; rafOn = true;
+    var delay = reducedMotion() ? 500 : 50;
+    setTimeout(function () { requestAnimationFrame(frameLoop); }, delay);
+  }
+  setInterval(function () { if (!rafOn && (currentResult() || S.source === 'live')) scheduleFrame(); }, 400);
+  window.addEventListener('resize', redrawAll);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) scheduleFrame(); });
+
+  /* ---------------- clicks: corrections, manual play, region ---------------- */
+  function pointerToCell(geo, cv, e) {
+    var r = cv.getBoundingClientRect(), d = cv.width / r.width;
+    var px = (e.clientX - r.left) * d, py = (e.clientY - r.top) * d;
+    var i = Math.round((px - geo.x0) / geo.cell), j = Math.round((py - geo.y0) / geo.cell);
+    if (i < 0 || j < 0 || i >= geo.n || j >= geo.n) return -1;
+    if (Math.hypot(px - (geo.x0 + i * geo.cell), py - (geo.y0 + j * geo.cell)) > geo.cell * 0.55) return -1;
+    return j * geo.n + i;
+  }
+  function correctAt(q) {
+    if (q < 0 || !S.cells) return;
+    if (S.source === 'manual') { manualPut(q); return; }
+    var cur = S.cells[q], next = (cur + 1) % 3;
+    var raw = S.raw ? S.raw[q] : cur;
+    if (next === raw) delete S.overrides[q]; else S.overrides[q] = { raw: raw, v: next };
+    var cells = S.cells.slice(0); cells[q] = next;
+    setCells(cells, false);
+    if (!S.correctTold) { S.correctTold = true; toast('잘못 읽은 돌은 눌러서 고칠 수 있어요 (빈칸 → 흑 → 백)'); }
+  }
+  bcv.addEventListener('click', function (e) { if (S.miniGeo) correctAt(pointerToCell(S.miniGeo, bcv, e)); });
+  stage.addEventListener('pointerdown', function (e) {
+    if (S.source === 'manual') { if (S.stageGeo) correctAt(pointerToCell(S.stageGeo, stage, e)); return; }
+    var r = stage.getBoundingClientRect(), d = stage.width / r.width;
+    var p = fromStage((e.clientX - r.left) * d, (e.clientY - r.top) * d);
+    if (S.regionMode) {
+      S.drag = { x0: p[0], y0: p[1], x1: p[0], y1: p[1] };
+      stage.setPointerCapture(e.pointerId);
+      drawStage();
+      return;
+    }
+    // tap on a board point in the screen view also corrects it
+    if (S.grid && S.cells) {
+      var gr = S.grid, best = -1, bd = 1e9;
+      for (var j = 0; j < gr.n; j++) for (var i = 0; i < gr.n; i++) {
+        var s = V.siteXY(gr, i, j), dd = Math.hypot(s[0] - p[0], s[1] - p[1]);
+        if (dd < bd) { bd = dd; best = j * gr.n + i; }
+      }
+      if (bd < Math.min(gr.sx, gr.sy) * 0.45) correctAt(best);
+    }
+  });
+  stage.addEventListener('pointermove', function (e) {
+    if (!S.drag) return;
+    var r = stage.getBoundingClientRect(), d = stage.width / r.width;
+    var p = fromStage((e.clientX - r.left) * d, (e.clientY - r.top) * d);
+    S.drag.x1 = p[0]; S.drag.y1 = p[1];
+    drawStage();
+  });
+  stage.addEventListener('pointerup', function () {
+    if (!S.drag) return;
+    var dr = S.drag; S.drag = null;
+    var x0 = Math.min(dr.x0, dr.x1), x1 = Math.max(dr.x0, dr.x1), y0 = Math.min(dr.y0, dr.y1), y1 = Math.max(dr.y0, dr.y1);
+    setRegionMode(false);
+    if (x1 - x0 < 40 || y1 - y0 < 40) { toast('판의 왼쪽 위 모서리에서 오른쪽 아래 모서리까지 크게 드래그하세요'); return; }
+    var mx = (x1 - x0) * 0.08, my = (y1 - y0) * 0.08;
+    var roi = { x: Math.max(0, Math.floor(x0 - mx)), y: Math.max(0, Math.floor(y0 - my)) };
+    roi.w = Math.min(S.frameW, Math.ceil(x1 + mx)) - roi.x; roi.h = Math.min(S.frameH, Math.ceil(y1 + my)) - roi.y;
+    S.pendingBox = { x0: x0, y0: y0, x1: x1, y1: y1 };
+    S.overrides = {};
+    var img = frameData(), g = detectOn(img, roi);
+    if (!g) { g = V.fromBox(S.pendingBox, 15, settings.mode === 'cell' ? 'cell' : 'point'); toast('선을 못 찾아서 드래그한 모서리를 15줄 판으로 맞췄어요'); }
+    S.grid = g; S.gridManual = true; S.pendingBox = null;
+    var rd = V.read(img, g);
+    hideStageMsg();
+    setCells(applyReading(rd), true);
+  });
+  function setRegionMode(on) {
+    S.regionMode = on;
+    $('btnRegion').classList.toggle('on', on);
+    stage.style.cursor = on ? 'crosshair' : '';
+    if (on) showStageMsg('판의 왼쪽 위 모서리 점에서 오른쪽 아래 모서리 점까지 드래그하세요'); else hideStageMsg();
+    drawStage();
+  }
+  $('btnRegion').addEventListener('click', function () {
+    if (S.source === 'manual') return;
+    if (!S.frameW) { toast('먼저 스크린샷이나 화면을 불러와 주세요'); return; }
+    setRegionMode(!S.regionMode);
+  });
+  $('btnRedetect').addEventListener('click', function () {
+    S.gridManual = false; S.overrides = {};
+    if (S.source === 'live') { S.grid = null; S.live.lastDetect = 0; S.live.prevKey = ''; S.live.stableKey = ''; setStatus('판을 다시 찾는 중…', 'busy'); }
+    else if (S.source === 'image' || S.source === 'sample') { setStatus('판을 읽는 중…', 'busy'); setTimeout(function () { processStill(null); }, 20); }
+  });
+  $('btnZoom').addEventListener('click', function () { S.zoom = !S.zoom; $('btnZoom').textContent = S.zoom ? '전체 화면' : '판만 크게'; drawStage(); });
+  $('btnTurn').addEventListener('click', function () { if (!S.cells) return; S.turnFlip = !S.turnFlip; S.toMove = 3 - S.toMove; requestAnalysis(); renderAll(); });
+  $('btnLine').addEventListener('click', function () { S.showLine = !S.showLine; $('btnLine').classList.toggle('on', S.showLine); redrawAll(); });
+
+  /* ---------------- stage message ---------------- */
+  function showStageMsg(t) { var m = $('stageMsg'); m.textContent = t; m.hidden = false; }
+  function hideStageMsg() { $('stageMsg').hidden = true; }
+
+  /* ---------------- mode UI ---------------- */
+  function setModeUI() {
+    var live = S.source === 'live', manual = S.source === 'manual';
+    $('badge').hidden = S.source !== 'sample';
+    $('btnStop').hidden = !live;
+    $('btnLiveText').textContent = live ? '다른 창 고르기' : (captureState() === 'ok' ? '화면 보기 시작' : '실시간 화면 보기');
+    document.querySelector('.board-box').hidden = manual;
+    $('manualBar').hidden = !manual;
+    $('btnRegion').hidden = manual; $('btnRedetect').hidden = manual; $('btnZoom').hidden = manual;
+    $('btnManual').classList.toggle('on', manual);
+    if (S.regionMode) setRegionMode(false);
+  }
+  $('btnLive').addEventListener('click', startLive);
+  $('btnStop').addEventListener('click', function () { stopLive(); });
+  $('btnManual').addEventListener('click', function () { if (S.source === 'manual') { toast('직접 놓기 중이에요. 판을 눌러 돌을 놓거나 빼세요.'); return; } startManual(); });
+
+  /* ---------------- settings UI ---------------- */
+  function bindSeg(id, key, num) {
+    var seg = $(id);
+    function sync() { seg.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(String(settings[key]) === b.dataset.v)); }); }
+    seg.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      settings[key] = num ? +b.dataset.v : b.dataset.v;
+      saveSettings(); sync(); onSettingChange(key);
+    });
+    sync();
+  }
+  function onSettingChange(key) {
+    $('ruleHint').textContent = RULE_HINT[settings.rule];
+    if (key === 'mode') {
+      if (S.grid && S.source !== 'manual' && settings.mode !== 'auto') {
+        S.grid = V.setMode(S.grid, settings.mode); S.overrides = {};
+        var rd = V.read(S.source === 'live' ? frameData() : frameData(), S.grid);
+        setCells(applyReading(rd), true); return;
+      }
+      if (settings.mode === 'auto' && S.source !== 'manual') { $('btnRedetect').click(); return; }
+    }
+    if (S.cells) { requestAnalysis(); renderAll(); }
+  }
+  bindSeg('segRule', 'rule', true);
+  bindSeg('segMe', 'me', true);
+  bindSeg('segTime', 'time', true);
+  bindSeg('segMode', 'mode', false);
+  $('ruleHint').textContent = RULE_HINT[settings.rule];
+  $('swapColors').checked = settings.swap;
+  $('soundOn').checked = settings.sound;
+  $('swapColors').addEventListener('change', function (e) {
+    settings.swap = e.target.checked; saveSettings();
+    if (S.cells && S.source !== 'manual') { S.overrides = {}; var rd = S.raw; if (rd) { var cells = rd.map(function (v) { return v === 1 ? 2 : (v === 2 ? 1 : 0); }); S.raw = cells; setCells(cells.slice(0), true); } }
+  });
+  $('soundOn').addEventListener('change', function (e) { settings.sound = e.target.checked; saveSettings(); if (settings.sound) ding(); });
+
+  /* ---------------- sound ---------------- */
+  var actx = null;
+  function ding() {
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      var o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
+      o.type = 'sine'; o.frequency.setValueAtTime(880, t); o.frequency.exponentialRampToValueAtTime(1320, t + 0.08);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + 0.4);
+    } catch (e) {}
+  }
+
+  /* ---------------- mini window (picture-in-picture) ---------------- */
+  function drawPipCanvas(cv) {
+    var g = cv.getContext('2d'), W = cv.width, H = cv.height, res = currentResult();
+    g.fillStyle = '#14171c'; g.fillRect(0, 0, W, H);
+    var size = Math.min(W - 16, H - 70);
+    if (S.cells) drawBoard(g, (W - size) / 2, 8, size, boardOpts(false));
+    else drawBoard(g, (W - size) / 2, 8, size, { n: S.n || 15, cells: null, res: null, last: -1 });
+    g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+    var y = 8 + size + 30, mine = res && (settings.me === 0 || settings.me === res.side);
+    g.fillStyle = mine ? '#8aa2ff' : '#9aa3ae'; g.font = '700 26px "Black Han Sans", sans-serif';
+    var big = !S.cells ? '판을 찾는 중' : (!res ? '생각하는 중…' : (res.kind === 'over' ? '게임 끝' : (res.move ? sideName(res.side) + '  →' + (res.move.x + 1) + ' ↓' + (res.move.y + 1) : '–')));
+    g.fillText(big, 12, y);
+    g.fillStyle = '#c9d0d8'; g.font = '500 13px "IBM Plex Sans KR", sans-serif';
+    var small = res && res.move ? (mine ? reasonFor(res) : '상대 차례') : '';
+    g.fillText(small.length > 30 ? small.slice(0, 29) + '…' : small, 12, y + 22);
+  }
+  function drawPip() {
+    if (!S.pip) return;
+    if (S.pip.kind === 'doc') {
+      var w = S.pip.win; if (w.closed) { S.pip = null; return; }
+      var cv = S.pip.canvas, r = cv.getBoundingClientRect(), d = w.devicePixelRatio || 1;
+      cv.width = Math.max(1, Math.round(r.width * d)); cv.height = Math.max(1, Math.round(r.height * d));
+      drawPipCanvas(cv);
+    } else if (S.pip.kind === 'video') {
+      drawPipCanvas(S.pip.canvas);
+    }
+  }
+  function openPip() {
+    if (S.pip) { closePip(); return; }
+    var top = false; try { top = window.top === window; } catch (e) {}
+    if ('documentPictureInPicture' in window && top) {
+      window.documentPictureInPicture.requestWindow({ width: 300, height: 370 }).then(function (w) {
+        var doc = w.document;
+        doc.body.style.cssText = 'margin:0;background:#14171c;height:100vh;overflow:hidden';
+        var cv = doc.createElement('canvas'); cv.style.cssText = 'width:100%;height:100%;display:block';
+        doc.body.appendChild(cv);
+        S.pip = { kind: 'doc', win: w, canvas: cv };
+        w.addEventListener('pagehide', function () { S.pip = null; $('btnPip').classList.remove('on'); });
+        w.addEventListener('resize', drawPip);
+        $('btnPip').classList.add('on');
+        drawPip();
+      }).catch(function () { openVideoPip(); });
+      return;
+    }
+    openVideoPip();
+  }
+  function openVideoPip() {
+    if (!document.pictureInPictureEnabled) { toast('이 브라우저에서는 미니창을 열 수 없어요. 게임 창 옆에 이 창을 나란히 두세요.'); return; }
+    try {
+      var cv = document.createElement('canvas'); cv.width = 360; cv.height = 440;
+      var v = document.createElement('video'); v.muted = true; v.playsInline = true;
+      var stream = cv.captureStream(4);
+      v.srcObject = stream;
+      drawPipCanvas(cv);
+      v.play().then(function () { return v.requestPictureInPicture(); }).then(function () {
+        S.pip = { kind: 'video', canvas: cv, video: v, timer: setInterval(function () { drawPipCanvas(cv); }, 700) };
+        $('btnPip').classList.add('on');
+        v.addEventListener('leavepictureinpicture', function () { if (S.pip) clearInterval(S.pip.timer); S.pip = null; $('btnPip').classList.remove('on'); });
+      }).catch(function () { toast('미니창을 열지 못했어요. 게임 창 옆에 이 창을 나란히 두세요.'); });
+    } catch (e) { toast('미니창을 열지 못했어요. 게임 창 옆에 이 창을 나란히 두세요.'); }
+  }
+  function closePip() {
+    if (!S.pip) return;
+    if (S.pip.kind === 'doc') { try { S.pip.win.close(); } catch (e) {} }
+    else { clearInterval(S.pip.timer); try { document.exitPictureInPicture(); } catch (e) {} }
+    S.pip = null; $('btnPip').classList.remove('on');
+  }
+  $('btnPip').addEventListener('click', openPip);
+
+  /* ---------------- live version download (inside the artifact viewer) ---------------- */
+  var downloads = null;
+  function openHelp() {
+    $('helpOverlay').hidden = false; $('helpGet').hidden = !downloads;
+    $('helpLive').innerHTML = downloads ? '<b>실시간 버전</b>: 아래 버튼으로 내려받아 크롬이나 엣지로 열면 게임 창을 계속 보면서 알려 줘요'
+      : '<b>실시간 버전</b>: 채팅에 있는 <b>오목훈수AI.html</b>을 받아 크롬이나 엣지로 열면 게임 창을 계속 보면서 알려 줘요';
+    $('helpClose').focus();
+  }
+  function closeHelp() { $('helpOverlay').hidden = true; }
+  $('helpClose').addEventListener('click', closeHelp);
+  $('helpOverlay').addEventListener('click', function (e) { if (e.target === $('helpOverlay')) closeHelp(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeHelp(); if (S.regionMode) setRegionMode(false); } });
+  function getLive() {
+    if (!downloads) { toast('채팅에 있는 오목훈수AI.html 파일을 내려받아 주세요'); return; }
+    fetch('omok-live.html').then(function (r) { if (!r.ok) throw new Error('missing'); return r.text(); })
+      .then(function (text) { return downloads.save({ filename: '오목훈수AI.html', data: text }); })
+      .then(function () { closeHelp(); toast('저장했어요. 파일을 크롬이나 엣지로 여세요.'); })
+      .catch(function (e) {
+        if (e && e.code === 'declined') return;
+        toast('내려받지 못했어요. 채팅에 있는 파일을 받아 주세요.');
+      });
+  }
+  $('btnGetLive').addEventListener('click', getLive);
+  $('helpGet').addEventListener('click', getLive);
+  (function setupLiveCard() {
+    var st = captureState();
+    if (STANDALONE || st === 'ok') { $('liveCard').hidden = true; return; }
+    if (st === 'unsupported') {
+      $('liveCard').hidden = false;
+      $('liveCardText').textContent = '이 기기의 브라우저는 화면 보기를 지원하지 않아요. 게임 화면을 캡처해서 붙여넣거나 이미지로 열어 주세요.';
+      $('btnGetLive').hidden = true;
+      return;
+    }
+    $('liveCard').hidden = false;
+    $('btnGetLive').hidden = true;
+    $('liveCardText').textContent = '이 페이지 안에서는 화면 공유가 막혀 있어요. 실시간으로 쓰려면 채팅에 있는 오목훈수AI.html 파일을 받아 크롬이나 엣지로 여세요. 지금은 스크린샷을 붙여넣어 쓸 수 있어요.';
+    if (window.claude && typeof window.claude.use === 'function') {
+      window.claude.use('downloads').then(function (dl) {
+        if (!dl) return;
+        downloads = dl;
+        $('btnGetLive').hidden = false;
+        $('liveCardText').textContent = '이 페이지 안에서는 화면 공유가 막혀 있어요. 아래 버튼으로 내려받아 크롬이나 엣지로 열면 게임 창을 계속 보면서 훈수해 줘요.';
+      }).catch(function () {});
+    }
+  })();
+
+  /* ---------------- start with the example ---------------- */
+  drawSample();
+  S.source = 'sample';
+  setModeUI();
+  setTimeout(function () { processStill(null); }, 30);
+  renderAll();
+})();
+</script>
+
+</body>
+</html>

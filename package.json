@@ -1,0 +1,66 @@
+{
+  "name": "nexus-studio",
+  "productName": "NEXUS",
+  "version": "2.1.0",
+  "description": "NEXUS — Roblox Studio · Player 연동 Luau 개발 · 테스트 환경",
+  "main": "src/main/main.js",
+  "author": "NEXUS",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis portable",
+    "dist:dir": "electron-builder --win dir"
+  },
+  "dependencies": {
+    "diff": "5.2.0"
+  },
+  "devDependencies": {
+    "electron": "33.4.11",
+    "electron-builder": "25.1.8",
+    "pe-library": "^1.0.1",
+    "resedit": "^2.0.3"
+  },
+  "build": {
+    "appId": "dev.nexus.studio",
+    "productName": "NEXUS",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "plugin",
+        "to": "plugin"
+      }
+    ],
+    "win": {
+      "target": [
+        "portable",
+        "dir"
+      ],
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "NEXUS-Setup-${version}.${ext}",
+      "shortcutName": "NEXUS",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "createDesktopShortcut": true
+    },
+    "portable": {
+      "artifactName": "NEXUS-Portable-${version}.${ext}"
+    },
+    "publish": null,
+    "asarUnpack": []
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jinwoobox-ai/nexus-studio"
+  }
+}
